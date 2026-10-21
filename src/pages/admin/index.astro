@@ -1,0 +1,65 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Nav from "../../components/Nav.astro";
+---
+
+<BaseLayout title="Administración — PawPass"
+  ><Nav /><main class="app-grid">
+    <aside class="side-nav">
+      <a href="mis-mascotas/">Mis mascotas</a><a
+        aria-current="page"
+        href="admin/">Resumen</a
+      ><a href="admin/cuentas/">Cuentas</a><a href="admin/mascotas/"
+        >Mascotas</a>
+    </aside><section>
+      <div class="page-heading">
+        <div>
+          <h1>Administración</h1><p data-admin-status>Comprobando permisos…</p>
+        </div>
+      </div><div class="grid-3">
+        <article class="panel stat">
+          <strong data-account-count>—</strong><span>Responsables</span>
+        </article><article class="panel stat">
+          <strong data-pet-count>—</strong><span>Mascotas registradas</span>
+        </article><article class="panel stat">
+          <strong data-unassigned-count>—</strong><span
+            >Usuarios sin cupos</span>
+        </article>
+      </div><div class="panel" style="margin-top:22px">
+        <h2>Control de responsables</h2><p>
+          Asigna cupos por responsable. Un usuario no puede crear mascotas hasta
+          que tenga al menos un cupo disponible.
+        </p><a class="button" href="admin/cuentas/">Gestionar responsables</a>
+      </div>
+    </section>
+  </main><script>
+    import { usersAndAccounts } from "../../lib/repository";
+    import { observeSession } from "../../lib/session";
+    const status = document.querySelector<HTMLElement>("[data-admin-status]");
+    observeSession(async (state) => {
+      if (state.status === "loading") return;
+      if (state.status !== "signed-in" || !state.session.isSuperadmin) {
+        window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
+        return;
+      }
+      try {
+        const rows = await usersAndAccounts();
+        const pets = rows.reduce((total, row) => total + row.pets, 0);
+        const unassigned = rows.filter(
+          (row) => !row.account || row.account.petLimit === 0,
+        ).length;
+        document.querySelector<HTMLElement>(
+          "[data-account-count]",
+        )!.textContent = String(rows.filter((row) => row.account).length);
+        document.querySelector<HTMLElement>("[data-pet-count]")!.textContent =
+          String(pets);
+        document.querySelector<HTMLElement>(
+          "[data-unassigned-count]",
+        )!.textContent = String(unassigned);
+        if (status) status.textContent = "Control global de PawPass.";
+      } catch {
+        if (status) status.textContent = "No fue posible cargar el resumen.";
+      }
+    });
+  </script></BaseLayout
+>

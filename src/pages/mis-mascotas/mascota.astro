@@ -1,0 +1,372 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Nav from "../../components/Nav.astro";
+import "../../styles/pet-editor.css";
+const kinds = [
+  {
+    key: "vaccines",
+    title: "Vacunas",
+    singular: "vacuna",
+    field: "Nombre de la vacuna",
+    date: "Fecha de aplicación",
+    next: "Próxima dosis",
+  },
+  {
+    key: "vet-visits",
+    title: "Consultas veterinarias",
+    singular: "consulta",
+    field: "Motivo de la consulta",
+    date: "Fecha de la consulta",
+    next: "Próximo control",
+  },
+  {
+    key: "medications",
+    title: "Medicamentos y tratamientos",
+    singular: "tratamiento",
+    field: "Medicamento o tratamiento",
+    date: "Fecha de inicio",
+    next: "Fecha de revisión o finalización",
+  },
+];
+---
+
+<BaseLayout title="Su vida, en un solo lugar — PawPass">
+  <Nav />
+  <main class="app-grid pet-workspace">
+    <aside class="side-nav">
+      <a href="mis-mascotas/">Mis mascotas</a><a href="#identidad">Identidad</a
+      ><a href="#cuidados">Salud e historial</a>
+    </aside>
+    <section>
+      <div class="page-heading">
+        <div>
+          <h1>Su vida, en un solo lugar.</h1><p
+            data-editor-status
+            role="status"
+          >
+            Cargando información…
+          </p>
+        </div><a class="button button-outline" data-public-link hidden
+          >Ver ficha pública</a>
+      </div>
+      <div data-editor-content hidden>
+        <form class="panel" data-pet-editor id="identidad">
+          <fieldset data-profile-fields>
+            <div class="editor-section-heading">
+              <h2>Lo que hace única a tu mascota.</h2><p>
+                Su identidad, su foto y esas pequeñas cosas que vale la pena
+                conocer.
+              </p>
+            </div>
+            <div class="identity-editor-grid">
+              <div class="photo-field">
+                <div class="photo-studio" data-photo-preview>
+                  <span data-preview-name aria-hidden="true"></span><div
+                    data-preview-image
+                  >
+                  </div><p data-photo-empty>Su mejor foto, aquí.</p>
+                </div>
+                <div class="field">
+                <label for="pet-photo">Foto de la mascota</label><input
+                  id="pet-photo"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  aria-describedby="photo-help"
+                />
+                <p class="small" id="photo-help">
+                  Usa tu PNG con fondo transparente para la portada. También se
+                  aceptan JPG y WebP, hasta 5 MB. La imagen se sube tal como la
+                  preparaste.
+                </p>
+                </div>
+                <div class="field">
+                <label for="pet-photo-presentation"
+                  >Presentación en la portada</label
+                ><select id="pet-photo-presentation"
+                  aria-describedby="photo-presentation-help"
+                  ><option value="normal">Imagen normal</option><option value="zoom">Imagen con zoom</option></select>
+                <p class="small" id="photo-presentation-help">El zoom amplía la misma foto y recorta los bordes del encuadre, sin modificar el archivo original. Guarda el perfil para aplicarlo a la ficha pública.</p>
+                </div>
+                <p class="small" data-photo-status role="status"></p>
+              </div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="pet-name">Nombre</label><input
+                    id="pet-name"
+                    required
+                    maxlength="80"
+                  />
+                </div>
+                <div class="field">
+                  <label for="pet-species">Especie</label><select
+                    id="pet-species"
+                    ><option>Perro</option><option>Gato</option><option
+                      >Otra</option
+                    ></select>
+                </div>
+                <div class="field">
+                  <label for="pet-sex">Sexo</label><select id="pet-sex"
+                    ><option>No especificado</option><option>Macho</option
+                    ><option>Hembra</option></select>
+                </div>
+                <div class="field full">
+                  <label for="pet-breed">Raza o mezcla</label><input
+                    id="pet-breed"
+                    maxlength="120"
+                  />
+                </div>
+                <div class="field">
+                  <label for="pet-birth-date">Fecha de nacimiento</label><input
+                    id="pet-birth-date"
+                    type="date"
+                  /><small>La edad se calcula automáticamente.</small>
+                </div>
+                <div class="field">
+                  <label for="pet-weight">Peso actual (kg)</label><input
+                    id="pet-weight"
+                    type="number"
+                    min="0.01"
+                    max="500"
+                    step="0.01"
+                  />
+                </div>
+                <div class="field full">
+                  <label for="pet-notes">Sobre mi mascota</label><textarea
+                    id="pet-notes"
+                    maxlength="1000"
+                    rows="3"
+                    placeholder="Su personalidad, rutinas o cómo acercarse a ella"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="editor-section-heading">
+              <h2>Su persona y su hogar.</h2><p>
+                Guarda un contacto y una referencia aproximada; tú decides si
+                compartirlos.
+              </p>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="pet-guardian">Persona responsable</label><input
+                  id="pet-guardian"
+                  autocomplete="name"
+                  maxlength="120"
+                />
+              </div>
+              <div class="field">
+                <label for="pet-phone">Teléfono / WhatsApp</label><input
+                  id="pet-phone"
+                  type="tel"
+                  autocomplete="tel"
+                  maxlength="30"
+                  placeholder="+57 300 123 4567"
+                  aria-describedby="pet-phone-help"
+                /><small id="pet-phone-help"
+                  >Para mostrar el botón de WhatsApp, incluye + y el código de
+                  país en un número que tenga WhatsApp.</small>
+              </div>
+              <div class="field full">
+                <label for="pet-location-label">Ubicación aproximada</label
+                ><input
+                  id="pet-location-label"
+                  maxlength="200"
+                  placeholder="Barrio y ciudad, no una dirección exacta"
+                /><div class="map" data-location-map></div><small
+                  >Selecciona un punto en el mapa para guardarlo.</small>
+              </div>
+            </div>
+            <div class="editor-section-heading">
+              <h2>Lo importante para cuidarla.</h2><p>
+                Información de referencia, no un diagnóstico ni un sustituto de
+                la atención veterinaria.
+              </p>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="pet-allergies">Alergias conocidas</label><textarea
+                  id="pet-allergies"
+                  maxlength="1000"
+                  rows="3"
+                  placeholder="Sólo las que conoces; déjalo vacío si no hay información"
+                ></textarea>
+              </div>
+              <div class="field">
+                <label for="pet-conditions"
+                  >Condiciones y cuidados especiales</label
+                ><textarea
+                  id="pet-conditions"
+                  maxlength="1000"
+                  rows="3"
+                  placeholder="Indicaciones relevantes para su cuidado"
+                ></textarea>
+              </div>
+            </div>
+            <div class="editor-section-heading">
+              <h2>Lo que se verá en su QR.</h2><p>
+                La información no seleccionada permanece en tu espacio privado.
+              </p>
+            </div>
+            <label class="switch-row" for="show-basics"
+              ><span
+                ><strong>Identidad y foto</strong><small
+                  >Nombre, especie, raza, fecha de nacimiento, sexo, peso,
+                  presentación y foto.</small
+                ></span
+              ><input class="switch" id="show-basics" type="checkbox" /></label
+            >
+            <label class="switch-row" for="show-contact"
+              ><span
+                ><strong>Persona de contacto</strong><small
+                  >Publicar nombre, teléfono y botón de WhatsApp.</small
+                ></span
+              ><input class="switch" id="show-contact" type="checkbox" /></label
+            >
+            <label class="switch-row" for="show-location"
+              ><span
+                ><strong>Ubicación aproximada</strong><small
+                  >El punto del mapa y su referencia.</small
+                ></span
+              ><input
+                class="switch"
+                id="show-location"
+                type="checkbox"
+              /></label
+            >
+            <label class="switch-row" for="show-health"
+              ><span
+                ><strong>Información de salud</strong><small
+                  >Alergias, cuidados especiales y únicamente los registros que
+                  marques para compartir.</small
+                ></span
+              ><input class="switch" id="show-health" type="checkbox" /></label
+            >
+            <div class="editor-save">
+              <button class="button" type="submit">Guardar perfil</button><p
+                class="small"
+                role="status"
+                data-save-message
+              >
+              </p>
+            </div>
+          </fieldset>
+        </form>
+        <section id="cuidados" class="care-editor">
+          <div class="editor-section-heading">
+            <h2>Cada cuidado cuenta.</h2><p>
+              Vacunas, consultas y tratamientos con fecha. Cada registro se
+              guarda de forma independiente y es privado por defecto.
+            </p>
+          </div>
+          <p class="small" role="status" data-records-status></p>
+          {
+            kinds.map((kind) => (
+              <section class="care-category">
+                <div class="care-category-heading">
+                  <>
+                    <h3>{kind.title}</h3>
+                    <span data-record-count={kind.key} />
+                  </>
+                </div>
+                <div data-record-list={kind.key} />
+                <details data-record-details={kind.key}>
+                  <summary>Añadir {kind.singular}</summary>
+                  <form data-record-form={kind.key}>
+                    <fieldset>
+                      <input type="hidden" name="recordId" />
+                      <div class="form-grid">
+                        <div class="field full">
+                          <>
+                            <label for={`${kind.key}-title`}>
+                              {kind.field}
+                            </label>
+                            <input
+                              id={`${kind.key}-title`}
+                              name="title"
+                              required
+                              maxlength="120"
+                            />
+                          </>
+                        </div>
+                        <div class="field">
+                          <>
+                            <label for={`${kind.key}-date`}>{kind.date}</label>
+                            <input
+                              id={`${kind.key}-date`}
+                              name="date"
+                              type="date"
+                              required
+                            />
+                          </>
+                        </div>
+                        <div class="field">
+                          <>
+                            <label for={`${kind.key}-next`}>{kind.next}</label>
+                            <input
+                              id={`${kind.key}-next`}
+                              name="nextDate"
+                              type="date"
+                            />
+                          </>
+                        </div>
+                        <div class="field full">
+                          <>
+                            <label for={`${kind.key}-professional`}>
+                              Profesional o clínica
+                            </label>
+                            <input
+                              id={`${kind.key}-professional`}
+                              name="professional"
+                              maxlength="120"
+                            />
+                          </>
+                        </div>
+                        <div class="field full">
+                          <>
+                            <label for={`${kind.key}-notes`}>
+                              Detalles e indicaciones
+                            </label>
+                            <textarea
+                              id={`${kind.key}-notes`}
+                              name="notes"
+                              rows="3"
+                              maxlength="1000"
+                              placeholder="Observaciones, dosis o indicaciones del profesional"
+                            />
+                          </>
+                        </div>
+                      </div>
+                      <label class="record-share">
+                        <input type="checkbox" name="isPublic" /> Compartir este
+                        registro si la sección de salud está activada en el
+                        perfil
+                      </label>
+                      <div class="photo-tools">
+                        <>
+                          <button class="button" type="submit">
+                            Guardar registro
+                          </button>
+                          <button
+                            class="button button-outline"
+                            type="button"
+                            data-record-cancel
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      </div>
+                      <p class="small" role="status" data-record-message />
+                    </fieldset>
+                  </form>
+                </details>
+              </section>
+            ))
+          }
+        </section>
+      </div>
+    </section>
+  </main>
+  <script>
+    import "../../lib/pet-editor";
+  </script>
+</BaseLayout>

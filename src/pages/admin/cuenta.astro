@@ -1,0 +1,73 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Nav from "../../components/Nav.astro";
+---
+
+<BaseLayout title="Responsable — PawPass"
+  ><Nav /><main class="app-grid">
+    <aside class="side-nav">
+      <a href="admin/cuentas/">Cuentas</a><a href="admin/mascotas/">Mascotas</a>
+    </aside><section>
+      <div class="page-heading">
+        <div>
+          <h1 data-owner-title>Responsable</h1><p data-owner-summary>
+            Cargando mascotas…
+          </p>
+        </div><a class="button button-outline" href="admin/cuentas/"
+          >Volver a cuentas</a>
+      </div><div data-owner-pets></div>
+    </section>
+  </main><script>
+    import {
+      accountForUser,
+      petsForAccount,
+      usersAndAccounts,
+    } from "../../lib/repository";
+    import { observeSession } from "../../lib/session";
+    const uid = new URLSearchParams(window.location.search).get("uid");
+    const title = document.querySelector<HTMLElement>("[data-owner-title]");
+    const summary = document.querySelector<HTMLElement>("[data-owner-summary]");
+    const petsContainer =
+      document.querySelector<HTMLElement>("[data-owner-pets]");
+    observeSession(async (state) => {
+      if (state.status === "loading") return;
+      if (state.status !== "signed-in" || !state.session.isSuperadmin) {
+        window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
+        return;
+      }
+      if (!uid) {
+        if (summary) summary.textContent = "No se indicó un responsable.";
+        return;
+      }
+      try {
+        const [account, rows] = await Promise.all([
+          accountForUser(uid),
+          usersAndAccounts(),
+        ]);
+        const owner = rows.find((row) => row.user.uid === uid);
+        if (title) title.textContent = owner?.user.email || "Responsable";
+        if (!account) {
+          if (summary)
+            summary.textContent =
+              "Este usuario aún no tiene una cuenta habilitada.";
+          return;
+        }
+        const pets = await petsForAccount(account.id);
+        if (summary)
+          summary.textContent = `${pets.length} mascota${pets.length === 1 ? "" : "s"} · cupo total ${account.petLimit}.`;
+        if (petsContainer)
+          petsContainer.innerHTML = pets.length
+            ? pets
+                .map(
+                  (pet) =>
+                    `<article class="pet-card"><div class="feature-icon">${pet.name.slice(0, 1)}</div><div class="meta"><h2>${pet.name}</h2><p>${pet.species}${pet.breed ? ` · ${pet.breed}` : ""}</p></div></article>`,
+                )
+                .join("")
+            : '<div class="panel"><h2>Sin mascotas</h2><p>Este responsable tiene cupos, pero todavía no ha registrado mascotas.</p></div>';
+      } catch {
+        if (summary)
+          summary.textContent = "No fue posible cargar este responsable.";
+      }
+    });
+  </script></BaseLayout
+>

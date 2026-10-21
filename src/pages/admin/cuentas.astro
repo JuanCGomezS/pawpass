@@ -1,0 +1,81 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Nav from "../../components/Nav.astro";
+---
+
+<BaseLayout title="Cuentas — PawPass"
+  ><Nav /><main class="app-grid">
+    <aside class="side-nav">
+      <a href="mis-mascotas/">Mis mascotas</a><a href="admin/">Resumen</a><a
+        aria-current="page"
+        href="admin/cuentas/">Cuentas</a
+      ><a href="admin/mascotas/">Mascotas</a>
+    </aside><section>
+      <div class="page-heading">
+        <div>
+          <h1>Responsables y mascotas</h1><p data-accounts-status>
+            Cargando responsables…
+          </p>
+        </div>
+      </div><div class="panel" data-account-list></div>
+    </section>
+  </main><script>
+    import { setPetLimit, usersAndAccounts } from "../../lib/repository";
+    import { observeSession } from "../../lib/session";
+    const status = document.querySelector<HTMLElement>(
+      "[data-accounts-status]",
+    );
+    const list = document.querySelector<HTMLElement>("[data-account-list]");
+    function render(rows: Awaited<ReturnType<typeof usersAndAccounts>>) {
+      if (!list) return;
+      list.innerHTML = rows.length
+        ? rows
+            .map(
+              ({ user, account, pets }) =>
+                `<article class="pet-card" data-user="${user.uid}"><div class="feature-icon">${(user.email || "?").slice(0, 1).toUpperCase()}</div><div class="meta"><h2>${user.email || user.uid}</h2><p>${account ? `${pets} mascota${pets === 1 ? "" : "s"} · cupo ${account.petLimit}` : "Sin cuenta ni cupos asignados"}</p></div><label class="field"><span class="small">Cupo</span><input data-limit type="number" min="0" value="${account?.petLimit ?? 0}" /></label><button class="button button-small" data-save>Cambiar cupo</button><a class="button button-small button-outline" href="admin/cuenta/?uid=${encodeURIComponent(user.uid)}">Ver mascotas</a></article>`,
+            )
+            .join("")
+        : "<p>No hay usuarios registrados todavía.</p>";
+      list.querySelectorAll<HTMLElement>("[data-save]").forEach((button) =>
+        button.addEventListener("click", async () => {
+          const row = button.closest<HTMLElement>("[data-user]");
+          const input = row?.querySelector<HTMLInputElement>("[data-limit]");
+          const user = rows.find(
+            (entry) => entry.user.uid === row?.dataset.user,
+          )?.user;
+          if (!input || !user) return;
+          button.setAttribute("aria-busy", "true");
+          try {
+            await setPetLimit(user, Number(input.value));
+            if (status)
+              status.textContent = `Cupo actualizado para ${user.email}.`;
+            const refreshed = await usersAndAccounts();
+            render(refreshed);
+          } catch (error) {
+            if (status)
+              status.textContent =
+                error instanceof Error
+                  ? error.message
+                  : "No fue posible actualizar el cupo.";
+            button.removeAttribute("aria-busy");
+          }
+        }),
+      );
+    }
+    observeSession(async (state) => {
+      if (state.status === "loading") return;
+      if (state.status !== "signed-in" || !state.session.isSuperadmin) {
+        window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
+        return;
+      }
+      try {
+        const rows = await usersAndAccounts();
+        render(rows);
+        if (status)
+          status.textContent = `${rows.length} responsable${rows.length === 1 ? "" : "s"} registrado${rows.length === 1 ? "" : "s"}.`;
+      } catch {
+        if (status) status.textContent = "No fue posible cargar las cuentas.";
+      }
+    });
+  </script></BaseLayout
+>

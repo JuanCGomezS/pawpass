@@ -1,0 +1,94 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Nav from "../../components/Nav.astro";
+---
+
+<BaseLayout title="Nueva mascota — PawPass"
+  ><Nav /><main class="app-grid">
+    <aside class="side-nav">
+      <a aria-current="page" href="mis-mascotas/">Mis mascotas</a>
+    </aside><section>
+      <div class="page-heading">
+        <div>
+          <h1>Nueva mascota</h1><p data-new-pet-status>
+            Comprobando tus cupos…
+          </p>
+        </div>
+      </div><form class="panel" data-pet-form hidden>
+        <div class="form-grid">
+          <div class="field">
+            <label for="name">Nombre</label><input id="name" required />
+          </div><div class="field">
+            <label for="species">Especie</label><select id="species"
+              ><option>Perro</option><option>Gato</option><option>Otra</option
+              ></select>
+          </div><div class="field full">
+            <label for="breed">Raza</label><input id="breed" />
+          </div>
+        </div><button class="button" style="margin-top:22px"
+          >Guardar mascota</button
+        ><p class="small" aria-live="polite" data-form-message></p>
+      </form>
+    </section>
+  </main><script>
+    import {
+      accountForUser,
+      availableSlots,
+      createPet,
+    } from "../../lib/repository";
+    import { observeSession } from "../../lib/session";
+    const status = document.querySelector<HTMLElement>("[data-new-pet-status]");
+    const form = document.querySelector<HTMLFormElement>("[data-pet-form]");
+    const message = document.querySelector<HTMLElement>("[data-form-message]");
+    let accountId = "";
+    observeSession(async (state) => {
+      if (state.status === "loading") return;
+      if (state.status !== "signed-in") {
+        window.location.assign(`${import.meta.env.BASE_URL}login/`);
+        return;
+      }
+      try {
+        const account = await accountForUser(state.session.uid);
+        const slots = account ? await availableSlots(account.id) : 0;
+        if (!account || slots === 0) {
+          if (status)
+            status.textContent =
+              "No tienes cupos disponibles. Pide al superadmin que te asigne uno.";
+          return;
+        }
+        accountId = account.id;
+        if (status)
+          status.textContent = `Tienes ${slots} cupo${slots === 1 ? "" : "s"} disponible${slots === 1 ? "" : "s"}.`;
+        form?.removeAttribute("hidden");
+      } catch {
+        if (status) status.textContent = "No fue posible comprobar tus cupos.";
+      }
+    });
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector<HTMLButtonElement>("button");
+      const name = form.elements.namedItem("name") as HTMLInputElement;
+      const species = form.elements.namedItem("species") as HTMLSelectElement;
+      const breed = form.elements.namedItem("breed") as HTMLInputElement;
+      if (!accountId || !name.value.trim()) return;
+      if (button) button.disabled = true;
+      if (message) message.textContent = "Guardando…";
+      try {
+        await createPet({
+          accountId,
+          name: name.value.trim(),
+          species: species.value,
+          breed: breed.value.trim(),
+        });
+        window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
+      } catch (error) {
+        if (message)
+          message.textContent =
+            error instanceof Error
+              ? error.message
+              : "No fue posible guardar la mascota.";
+        if (button) button.disabled = false;
+      }
+    });
+  </script></BaseLayout
+>

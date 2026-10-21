@@ -1,0 +1,23 @@
+---
+const { name = "Luna", small = false } = Astro.props;
+---
+
+<div
+  class:list={["pet-avatar", { small }]}
+  role="img"
+  aria-label={`Ilustración de ${name}`}
+>
+  <svg viewBox="0 0 120 120" aria-hidden="true"
+    ><path
+      d="M28 47 21 20l27 15c8-4 17-6 25-5l25-14-5 30c8 9 12 21 10 36-3 23-20 34-48 34S22 104 22 81c0-14 2-25 6-34Z"
+      fill="currentColor"></path><path
+      d="M43 68c5 0 8-3 8-7s-3-7-8-7-8 3-8 7 3 7 8 7Zm34 0c5 0 8-3 8-7s-3-7-8-7-8 3-8 7 3 7 8 7Z"
+      fill="#fff9ef"></path><circle cx="45" cy="61" r="2.5" fill="#172a3a"
+    ></circle><circle cx="75" cy="61" r="2.5" fill="#172a3a"></circle><path
+      d="M54 76c4 4 9 4 13 0-3-4-10-4-13 0Z"
+      fill="#172a3a"></path><path
+      d="M60 80v8"
+      stroke="#172a3a"
+      stroke-width="3"
+      stroke-linecap="round"></path></svg>
+</div>

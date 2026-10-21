@@ -1,0 +1,57 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Nav from "../../components/Nav.astro";
+---
+
+<BaseLayout title="Mascotas — PawPass"
+  ><Nav /><main class="app-grid">
+    <aside class="side-nav">
+      <a href="mis-mascotas/">Mis mascotas</a><a href="admin/">Resumen</a><a
+        href="admin/cuentas/">Cuentas</a
+      ><a aria-current="page" href="admin/mascotas/">Mascotas</a>
+    </aside><section>
+      <div class="page-heading">
+        <div><h1>Mascotas</h1><p data-pets-status>Cargando mascotas…</p></div>
+      </div><div class="panel" data-global-pets></div>
+    </section>
+  </main><script>
+    import { petsForAccount, usersAndAccounts } from "../../lib/repository";
+    import { observeSession } from "../../lib/session";
+    const status = document.querySelector<HTMLElement>("[data-pets-status]");
+    const list = document.querySelector<HTMLElement>("[data-global-pets]");
+    observeSession(async (state) => {
+      if (state.status === "loading") return;
+      if (state.status !== "signed-in" || !state.session.isSuperadmin) {
+        window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
+        return;
+      }
+      try {
+        const rows = await usersAndAccounts();
+        const groups = await Promise.all(
+          rows
+            .filter((row) => row.account)
+            .map(async (row) => ({
+              owner: row.user.email,
+              pets: await petsForAccount(row.account!.id),
+            })),
+        );
+        const pets = groups.flatMap((group) =>
+          group.pets.map((pet) => ({ ...pet, owner: group.owner })),
+        );
+        if (status)
+          status.textContent = `${pets.length} mascota${pets.length === 1 ? "" : "s"} registrada${pets.length === 1 ? "" : "s"}.`;
+        if (list)
+          list.innerHTML = pets.length
+            ? pets
+                .map(
+                  (pet) =>
+                    `<article class="pet-card"><div class="feature-icon">${pet.name.slice(0, 1)}</div><div class="meta"><h2>${pet.name}</h2><p>${pet.owner} · ${pet.species}${pet.breed ? ` · ${pet.breed}` : ""}</p></div></article>`,
+                )
+                .join("")
+            : "<p>No hay mascotas registradas.</p>";
+      } catch {
+        if (status) status.textContent = "No fue posible cargar las mascotas.";
+      }
+    });
+  </script></BaseLayout
+>

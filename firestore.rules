@@ -1,0 +1,177 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isSuperadmin() { return signedIn() && request.auth.token.role == 'superadmin'; }
+    function account(accountId) { return get(/databases/$(database)/documents/accounts/$(accountId)); }
+    function ownsAccount(accountId) { return signedIn() && account(accountId).data.adminUid == request.auth.uid; }
+    function slot(accountId, slotId) { return get(/databases/$(database)/documents/accounts/$(accountId)/slots/$(slotId)); }
+    function petPath(petId) { return /databases/$(database)/documents/pets/$(petId); }
+    function profilePath(publicId) { return /databases/$(database)/documents/publicProfiles/$(publicId); }
+    function privateRecordPath(petId, kind, recordId) {
+      return /databases/$(database)/documents/pets/$(petId)/$(kind)/$(recordId);
+    }
+    function publicRecordPath(publicId, kind, recordId) {
+      return /databases/$(database)/documents/publicProfiles/$(publicId)/$(kind)/$(recordId);
+    }
+    function validKind(kind) { return kind in ['vaccines', 'medications', 'vet-visits']; }
+    function publicHealthVisible(publicId, kind) {
+      return validKind(kind) && exists(profilePath(publicId)) &&
+        get(profilePath(publicId)).data.get('healthEnabled', false) == true &&
+        exists(petPath(get(profilePath(publicId)).data.petId)) &&
+        get(petPath(get(profilePath(publicId)).data.petId)).data.publicId == publicId &&
+        get(petPath(get(profilePath(publicId)).data.petId)).data.visibility.get('health', false) == true;
+    }
+    function publicFieldsOnly(data) {
+      return data.keys().hasOnly(['petId', 'accountId', 'name', 'species', 'breed', 'photoUrl', 'photoPresentation', 'location',
+        'birthDate', 'sex', 'weightKg', 'notes', 'contact', 'health', 'healthEnabled', 'updatedAt']) &&
+        data.keys().hasAll(['petId', 'accountId', 'updatedAt']);
+    }
+    function matchesOptional(data, source, field, enabled) {
+      return !(field in data) || (enabled && field in source && data[field] == source[field]);
+    }
+    function matchesProfile(data, pet, publicId) {
+      let vis = pet.get('visibility', {});
+      let basics = vis.get('basics', false) == true;
+      let contact = vis.get('contact', false) == true;
+      let health = vis.get('health', false) == true;
+      return publicFieldsOnly(data) && pet.get('publicId', '') == publicId &&
+        data.petId == pet.id && data.accountId == pet.accountId &&
+        matchesOptional(data, pet, 'name', basics) &&
+        matchesOptional(data, pet, 'species', basics) &&
+        matchesOptional(data, pet, 'breed', basics) &&
+        matchesOptional(data, pet, 'photoUrl', basics) &&
+        matchesOptional(data, pet, 'photoPresentation', basics) &&
+        matchesOptional(data, pet, 'birthDate', basics) &&
+        matchesOptional(data, pet, 'sex', basics) &&
+        matchesOptional(data, pet, 'weightKg', basics) &&
+        matchesOptional(data, pet, 'notes', basics) &&
+        matchesOptional(data, pet, 'location', vis.get('location', false) == true) &&
+        (!( 'contact' in data) || (contact && data.contact is map &&
+          data.contact.keys().hasOnly(['guardian', 'phone']) &&
+          matchesOptional(data.contact, pet, 'guardian', true) &&
+          matchesOptional(data.contact, pet, 'phone', true))) &&
+        (!( 'health' in data) || (health && data.health is map &&
+          data.health.keys().hasOnly(['allergies', 'conditions']) &&
+          matchesOptional(data.health, pet, 'allergies', true) &&
+          matchesOptional(data.health, pet, 'conditions', true))) &&
+        (health ? data.get('healthEnabled', false) == true : !('healthEnabled' in data));
+    }
+    function validRecord(data) {
+      return data.keys().hasOnly(['title', 'date', 'nextDate', 'professional', 'notes', 'isPublic', 'updatedAt']) &&
+        data.keys().hasAll(['title', 'date', 'isPublic', 'updatedAt']) &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 120 &&
+        data.date is string && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && data.isPublic is bool &&
+        (!('nextDate' in data) || (data.nextDate is string &&
+          data.nextDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))) &&
+        (!('professional' in data) || (data.professional is string && data.professional.size() <= 120)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+    function publicRecordMatches(data, source) {
+      return data.keys().hasOnly(['title', 'date', 'nextDate', 'professional', 'notes']) &&
+        data.keys().hasAll(['title', 'date']) && source.isPublic == true &&
+        data.title == source.title && data.date == source.date &&
+        matchesOptional(data, source, 'nextDate', true) &&
+        matchesOptional(data, source, 'professional', true) &&
+        matchesOptional(data, source, 'notes', true) &&
+        data.keys().hasAll(source.keys().removeAll(['isPublic', 'updatedAt']));
+    }
+    function privateRecordSynchronized(petId, kind, recordId, data) {
+      let pet = getAfter(petPath(petId)).data;
+      let path = publicRecordPath(pet.publicId, kind, recordId);
+      return data.isPublic == true
+        ? existsAfter(path) && publicRecordMatches(getAfter(path).data, data)
+        : !existsAfter(path);
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isSuperadmin());
+      allow list: if isSuperadmin();
+      allow create: if request.auth.uid == uid && request.resource.data.role == 'prospect';
+      allow update: if isSuperadmin() || (request.auth.uid == uid && request.resource.data.role == resource.data.role);
+      allow delete: if isSuperadmin();
+    }
+
+    match /accounts/{accountId} {
+      allow read: if ownsAccount(accountId) || isSuperadmin();
+      allow create, update, delete: if isSuperadmin();
+      match /slots/{slotId} {
+        allow read: if ownsAccount(accountId) || isSuperadmin();
+        allow create, delete: if isSuperadmin();
+        allow update: if isSuperadmin() || (
+          ownsAccount(accountId) &&
+          resource.data.status == 'available' &&
+          request.resource.data.status == 'claimed' &&
+          request.resource.data.petId == slotId &&
+          existsAfter(petPath(slotId))
+        );
+      }
+    }
+
+    match /pets/{petId} {
+      allow get, list: if ownsAccount(resource.data.accountId) || isSuperadmin();
+      allow create: if ownsAccount(request.resource.data.accountId) &&
+        request.resource.data.id == petId &&
+        request.resource.data.slotId == petId &&
+        slot(request.resource.data.accountId, petId).data.status == 'available' &&
+        getAfter(/databases/$(database)/documents/accounts/$(request.resource.data.accountId)/slots/$(petId)).data.status == 'claimed' &&
+        existsAfter(profilePath(request.resource.data.publicId)) &&
+        matchesProfile(getAfter(profilePath(request.resource.data.publicId)).data, request.resource.data,
+          request.resource.data.publicId);
+      allow update: if ((ownsAccount(resource.data.accountId) &&
+        request.resource.data.accountId == resource.data.accountId &&
+        request.resource.data.slotId == resource.data.slotId &&
+        request.resource.data.publicId == resource.data.publicId) || isSuperadmin()) &&
+        existsAfter(profilePath(resource.data.publicId)) &&
+        matchesProfile(getAfter(profilePath(resource.data.publicId)).data, request.resource.data,
+          resource.data.publicId);
+      allow delete: if false;
+      match /{kind}/{recordId} {
+        allow get, list: if ownsAccount(get(petPath(petId)).data.accountId) || isSuperadmin();
+        allow create, update: if validKind(kind) &&
+          (ownsAccount(get(petPath(petId)).data.accountId) || isSuperadmin()) &&
+          validRecord(request.resource.data) &&
+          privateRecordSynchronized(petId, kind, recordId, request.resource.data);
+        allow delete: if validKind(kind) &&
+          (ownsAccount(get(petPath(petId)).data.accountId) || isSuperadmin()) &&
+          !existsAfter(publicRecordPath(get(petPath(petId)).data.publicId, kind, recordId));
+      }
+    }
+
+    match /publicProfiles/{publicId} {
+      allow get: if resource.data.petId is string && exists(petPath(resource.data.petId)) &&
+        get(petPath(resource.data.petId)).data.publicId == publicId &&
+        get(petPath(resource.data.petId)).data.accountId == resource.data.accountId &&
+        matchesProfile(resource.data, get(petPath(resource.data.petId)).data, publicId);
+      allow list: if false;
+      allow create, update: if (ownsAccount(request.resource.data.accountId) || isSuperadmin()) &&
+        existsAfter(petPath(request.resource.data.petId)) &&
+        matchesProfile(request.resource.data, getAfter(petPath(request.resource.data.petId)).data, publicId) &&
+        (!exists(profilePath(publicId)) ||
+          (resource.data.petId == request.resource.data.petId &&
+            resource.data.accountId == request.resource.data.accountId));
+      allow delete: if false;
+      match /{kind}/{recordId} {
+        allow get: if (validKind(kind) && exists(profilePath(publicId)) &&
+          (ownsAccount(get(profilePath(publicId)).data.accountId) || isSuperadmin())) ||
+          publicHealthVisible(publicId, kind);
+        allow list: if publicHealthVisible(publicId, kind);
+        allow create, update: if validKind(kind) && existsAfter(profilePath(publicId)) &&
+          (ownsAccount(getAfter(profilePath(publicId)).data.accountId) || isSuperadmin()) &&
+          existsAfter(petPath(getAfter(profilePath(publicId)).data.petId)) &&
+          getAfter(petPath(getAfter(profilePath(publicId)).data.petId)).data.publicId == publicId &&
+          getAfter(petPath(getAfter(profilePath(publicId)).data.petId)).data.accountId ==
+            getAfter(profilePath(publicId)).data.accountId &&
+          existsAfter(privateRecordPath(getAfter(profilePath(publicId)).data.petId, kind, recordId)) &&
+          publicRecordMatches(request.resource.data,
+            getAfter(privateRecordPath(getAfter(profilePath(publicId)).data.petId, kind, recordId)).data);
+        allow delete: if validKind(kind) && exists(profilePath(publicId)) &&
+          (ownsAccount(get(profilePath(publicId)).data.accountId) || isSuperadmin()) &&
+          exists(petPath(get(profilePath(publicId)).data.petId)) &&
+          get(petPath(get(profilePath(publicId)).data.petId)).data.publicId == publicId &&
+          (!existsAfter(privateRecordPath(get(profilePath(publicId)).data.petId, kind, recordId)) ||
+            getAfter(privateRecordPath(get(profilePath(publicId)).data.petId, kind, recordId)).data.isPublic == false);
+      }
+    }
+  }
+}

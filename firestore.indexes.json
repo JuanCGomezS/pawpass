@@ -1,0 +1,9 @@
+{
+  "indexes": [
+    { "collectionGroup": "pets", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "accountId", "order": "ASCENDING" },
+      { "fieldPath": "updatedAt", "order": "DESCENDING" }
+    ] }
+  ],
+  "fieldOverrides": []
+}

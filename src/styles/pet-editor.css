@@ -1,0 +1,46 @@
+.pet-workspace { max-width: 1440px; }
+.pet-workspace fieldset { border: 0; min-width: 0; padding: 0; margin: 0; }
+.pet-workspace .panel { background: #fffdf9; }
+.editor-section-heading { margin: 40px 0 22px; }
+fieldset > .editor-section-heading:first-child { margin-top: 0; }
+.editor-section-heading h2 { font-size: 1.6rem; font-weight: 500; letter-spacing: -.025em; margin: 0 0 10px; }
+.editor-section-heading p { color: var(--muted); font-size: .88rem; margin: 0; }
+.identity-editor-grid { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: 32px; align-items: start; }
+.pet-workspace .form-grid { align-items: start; }
+.pet-workspace .field { align-content: start; }
+.pet-workspace .field small { font-size: .78rem; line-height: 1.5; color: var(--muted); }
+.pet-workspace .photo-studio { background: #f1e7d9; min-height: 320px; height: 340px; border-radius: 12px; padding: 20px; }
+.pet-workspace .photo-studio > span { color: #a95e48; font-size: clamp(2rem, 4vw, 3.8rem); line-height: 1.1; }
+.pet-workspace .photo-studio [data-preview-image] { position: absolute; inset: 65px 16px 0; height: auto; margin: 0; overflow: hidden; }
+.pet-workspace .photo-studio img { object-position: center top; }
+.pet-workspace .photo-studio[data-presentation='zoom'] img { transform: scale(1.8); transform-origin: 60% 20%; }
+.pet-workspace .photo-studio p { position: absolute; inset: 50% 10% auto; text-align: center; color: #72695c; font-size: .85rem; }
+.photo-field > .field { margin-top: 20px; }
+.photo-field .small { margin: 0; line-height: 1.5; }
+.photo-field > [data-photo-status]:not(:empty) { margin-top: 12px; }
+.pet-workspace textarea { resize: vertical; min-height: 96px; }
+.pet-workspace .switch-row small { display: block; color: var(--muted); font-size: .78rem; line-height: 1.6; margin-top: 5px; }
+.editor-save { display: flex; align-items: center; gap: 20px; margin-top: 24px; }
+.editor-save p { flex: 1; margin: 0; }
+.care-editor { padding-top: 15px; scroll-margin-top: 24px; }
+.care-category { padding: 26px 0; border-top: 1px solid var(--line); }
+.care-category-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.care-category-heading h3 { font-size: 1.2rem; margin: 0; font-weight: 600; }
+.care-category-heading > span { font-size: .75rem; color: var(--muted); }
+.care-empty { color: var(--muted); font-size: .85rem; padding: 20px 0; }
+.care-category details { margin-top: 20px; }
+.care-category summary { cursor: pointer; font-size: .85rem; font-weight: 600; padding: 14px 0; }
+.care-category details[open] { padding: 0 24px 24px; background: #fffdf9; border: 1px solid var(--line); border-radius: 12px; }
+.care-category details[open] summary { margin-bottom: 18px; }
+.record-share { display: flex; align-items: flex-start; gap: 12px; font-size: .8rem; margin: 22px 0; }
+.record-share input { flex-shrink: 0; margin-top: 4px; }
+.care-record { display: grid; grid-template-columns: 100px minmax(0, 1fr) auto; align-items: start; gap: 22px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.care-record time { color: var(--muted); font-size: .75rem; padding-top: 3px; }
+.care-record h4 { margin: 0; font-size: .95rem; font-weight: 600; }
+.care-record p { margin: 7px 0 0; font-size: .8rem; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; }
+.record-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.pet-workspace .text-button { background: #fffdf9; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; min-height: 40px; padding: 8px 14px; font-size: .8rem; }
+.pet-workspace .text-button:hover { background: var(--sand); }
+.pet-workspace .text-button:disabled { opacity: .55; cursor: wait; }
+@media (max-width: 900px) { .identity-editor-grid { grid-template-columns: 1fr; } .photo-field { max-width: 450px; } }
+@media (max-width: 700px) { .pet-workspace .side-nav { gap: 8px; } .pet-workspace .side-nav a { font-size: .75rem; padding-inline: 8px; } .care-record { grid-template-columns: 1fr; gap: 8px; } .record-actions { flex-direction: row; gap: 20px; } .editor-save { align-items: flex-start; flex-direction: column; } .care-category-heading { gap: 12px; } .care-category-heading h3 { font-size: 1.1rem; } }

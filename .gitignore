@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+.env
+.firebase/
+firebase-debug.log
+.impeccable/
+*:Zone.Identifier
+scripts/

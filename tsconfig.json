@@ -1,0 +1,6 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": { "module": "ESNext" },
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"]
+}

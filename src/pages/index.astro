@@ -1,0 +1,75 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Nav from "../components/Nav.astro";
+const base = import.meta.env.BASE_URL;
+---
+
+<BaseLayout title="PawPass — Una identidad tan única como tu mascota">
+  <Nav />
+  <main>
+    <section class="hero">
+      <div>
+        <h1>Su identidad.<br /><em>Tu tranquilidad.</em></h1>
+        <p>
+          Una ficha para reconocerla. Un enlace para encontrarte. La información
+          que tú eliges, siempre a mano.
+        </p>
+        <div class="hero-actions">
+          <a class="button" href="login/"
+            >Crear mi cuenta <span aria-hidden="true">↗</span></a
+          >
+          <a class="button button-outline" href={`${base}#como-funciona`}
+            >Conocer PawPass</a
+          >
+        </div>
+      </div>
+      <div class="identity-art">
+        <img
+          src={`${base}images/companion.jpg`}
+          width="1200"
+          height="1924"
+          alt="Un golden retriever sostiene una flor amarilla"
+          fetchpriority="high"
+        />
+        <div class="identity-caption">
+          <strong>Una identidad propia.</strong><span>Un vínculo contigo.</span>
+        </div>
+      </div>
+    </section>
+    <div class="landing-statement">
+      <strong>Lo importante, sin exponer de más.</strong><p>
+        Tu espacio privado y su ficha pública son diferentes. Tú decides qué
+        información compartir.
+      </p>
+    </div>
+    <section class="section" id="como-funciona">
+      <h2>Una pequeña ficha.<br />Un gran vínculo.</h2>
+      <div class="feature-list">
+        <article>
+          <h3>Su historia, en tu espacio.</h3><p>
+            Ingresa a tu cuenta y, cuando tengas cupos habilitados, registra a
+            tu mascota. Añade su foto y una ubicación aproximada.
+          </p>
+        </article>
+        <article>
+          <h3>Su identidad, a un escaneo.</h3><p>
+            Comparte su enlace público en un QR. Quien lo abra verá la
+            información que hayas habilitado, sin necesidad de iniciar sesión.
+          </p>
+        </article>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">
+    <div>
+      <a href="" aria-label="PawPass — Inicio"
+        ><img
+          src={`${base}logo_horizontal.png`}
+          alt="PawPass"
+          width="2172"
+          height="724"
+        /></a
+      ><span>Su identidad. Tu tranquilidad.</span><a href="login/">Mi cuenta</a>
+    </div>
+  </footer>
+</BaseLayout>

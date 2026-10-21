@@ -1,0 +1,93 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Nav from "../../components/Nav.astro";
+---
+
+<BaseLayout title="Mis mascotas — PawPass"
+  ><Nav /><main class="app-grid">
+    <aside class="side-nav">
+      <a aria-current="page" href="mis-mascotas/">Mis mascotas</a><a
+        data-admin-link
+        hidden
+        href="admin/">Administración</a>
+    </aside><section data-pets-page>
+      <div class="page-heading">
+        <div>
+          <h1>Mis mascotas</h1><p data-pets-summary>Comprobando tu cuenta…</p>
+        </div><a
+          class="button"
+          data-create-pet
+          hidden
+          href="mis-mascotas/nueva/">Añadir mascota</a>
+      </div><div class="two-col">
+        <div data-pet-list></div><aside class="panel">
+          <h2>Cupos disponibles</h2><div class="meter">
+            <span data-capacity-meter></span>
+          </div><strong data-capacity>—</strong><p
+            class="small"
+            data-capacity-help
+          >
+            Un superadmin debe asignarte cupos antes de que puedas crear
+            mascotas.
+          </p>
+        </aside>
+      </div>
+    </section>
+  </main><script>
+    import {
+      accountForUser,
+      availableSlots,
+      petsForAccount,
+    } from "../../lib/repository";
+    import { observeSession } from "../../lib/session";
+    const summary = document.querySelector<HTMLElement>("[data-pets-summary]");
+    const list = document.querySelector<HTMLElement>("[data-pet-list]");
+    const create = document.querySelector<HTMLElement>("[data-create-pet]");
+    const capacity = document.querySelector<HTMLElement>("[data-capacity]");
+    const meter = document.querySelector<HTMLElement>("[data-capacity-meter]");
+    const adminLink = document.querySelector<HTMLElement>("[data-admin-link]");
+    observeSession(async (state) => {
+      if (state.status === "loading") return;
+      if (state.status !== "signed-in") {
+        window.location.assign(`${import.meta.env.BASE_URL}login/`);
+        return;
+      }
+      if (adminLink) adminLink.hidden = !state.session.isSuperadmin;
+      try {
+        const account = await accountForUser(state.session.uid);
+        if (!account) {
+          if (summary)
+            summary.textContent =
+              "Aún no tienes una cuenta de mascotas asignada.";
+          if (capacity) capacity.textContent = "0 cupos";
+          return;
+        }
+        const [pets, slots] = await Promise.all([
+          petsForAccount(account.id),
+          availableSlots(account.id),
+        ]);
+        const used = pets.length;
+        if (summary)
+          summary.textContent = `Cuenta activa: ${used} mascota${used === 1 ? "" : "s"} registrada${used === 1 ? "" : "s"}.`;
+        if (capacity)
+          capacity.textContent = `${slots} de ${account.petLimit} cupos disponibles`;
+        if (meter)
+          meter.style.width = `${account.petLimit ? Math.round((used / account.petLimit) * 100) : 0}%`;
+        if (create) create.hidden = slots === 0;
+        if (list)
+          list.innerHTML = pets.length
+            ? pets
+                .map(
+                  (pet) =>
+                    `<article class="pet-card"><div class="feature-icon">${pet.name.slice(0, 1)}</div><div class="meta"><h2>${pet.name}</h2><p>${pet.species}${pet.breed ? ` · ${pet.breed}` : ""}</p></div><a class="button button-small button-outline" href="mis-mascotas/mascota/?id=${encodeURIComponent(pet.id)}">Administrar</a></article>`,
+                )
+                .join("")
+            : '<div class="panel"><h2>Aún no tienes mascotas registradas</h2><p>Cuando tengas un cupo disponible, podrás añadir la primera.</p></div>';
+      } catch {
+        if (summary)
+          summary.textContent =
+            "No fue posible cargar tu cuenta. Intenta de nuevo.";
+      }
+    });
+  </script></BaseLayout
+>

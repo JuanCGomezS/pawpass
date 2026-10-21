@@ -1,0 +1,40 @@
+---
+
+---
+
+<header class="site-header" data-site-nav>
+  <a class="brand" href="" aria-label="PawPass — Inicio"
+    ><img
+      src={`${import.meta.env.BASE_URL}logo_horizontal.png`}
+      width="2172"
+      height="724"
+      alt="PawPass"
+    /></a
+  ><nav aria-label="Principal" data-nav-links>
+    <a href="">Inicio</a><a href="login/">Ingresar</a>
+  </nav><div data-nav-actions>
+    <a class="button button-small" href="login/">Crear cuenta</a>
+  </div>
+</header><script>
+  import { observeSession, signOutUser } from "../lib/session";
+  const links = document.querySelector<HTMLElement>("[data-nav-links]");
+  const actions = document.querySelector<HTMLElement>("[data-nav-actions]");
+  observeSession((state) => {
+    if (!links || !actions || state.status === "loading") return;
+    if (state.status === "signed-in") {
+      links.innerHTML = `<a href="">Inicio</a><a href="mis-mascotas/">Mis mascotas</a>${state.session.isSuperadmin ? '<a href="admin/">Administración</a>' : ""}`;
+      actions.innerHTML =
+        '<button class="avatar" type="button" data-sign-out aria-label="Cerrar sesión">Salir</button>';
+      actions
+        .querySelector("[data-sign-out]")
+        ?.addEventListener("click", async () => {
+          await signOutUser();
+          window.location.assign(import.meta.env.BASE_URL);
+        });
+      return;
+    }
+    links.innerHTML = '<a href="">Inicio</a><a href="login/">Ingresar</a>';
+    actions.innerHTML =
+      '<a class="button button-small" href="login/">Crear cuenta</a>';
+  });
+</script>

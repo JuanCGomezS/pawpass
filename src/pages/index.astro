@@ -1,75 +1,155 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Nav from "../components/Nav.astro";
+import "../styles/home.css";
 const base = import.meta.env.BASE_URL;
+const login = `${base}login/`;
 ---
 
-<BaseLayout title="PawPass — Una identidad tan única como tu mascota">
-  <Nav />
-  <main>
-    <section class="hero">
-      <div>
-        <h1>Su identidad.<br /><em>Tu tranquilidad.</em></h1>
-        <p>
-          Una ficha para reconocerla. Un enlace para encontrarte. La información
-          que tú eliges, siempre a mano.
-        </p>
-        <div class="hero-actions">
-          <a class="button" href="login/"
-            >Crear mi cuenta <span aria-hidden="true">↗</span></a
-          >
-          <a class="button button-outline" href={`${base}#como-funciona`}
-            >Conocer PawPass</a
-          >
-        </div>
-      </div>
-      <div class="identity-art">
-        <img
-          src={`${base}images/companion.jpg`}
-          width="1200"
-          height="1924"
-          alt="Un golden retriever sostiene una flor amarilla"
-          fetchpriority="high"
-        />
-        <div class="identity-caption">
-          <strong>Una identidad propia.</strong><span>Un vínculo contigo.</span>
-        </div>
-      </div>
-    </section>
-    <div class="landing-statement">
-      <strong>Lo importante, sin exponer de más.</strong><p>
-        Tu espacio privado y su ficha pública son diferentes. Tú decides qué
-        información compartir.
-      </p>
-    </div>
-    <section class="section" id="como-funciona">
-      <h2>Una pequeña ficha.<br />Un gran vínculo.</h2>
-      <div class="feature-list">
-        <article>
-          <h3>Su historia, en tu espacio.</h3><p>
-            Ingresa a tu cuenta y, cuando tengas cupos habilitados, registra a
-            tu mascota. Añade su foto y una ubicación aproximada.
+<BaseLayout
+  title="PawPass — Un pequeño perfil para un amor enorme"
+  description="Dale a tu mascota su propia ficha e identificación con QR. Organiza sus cuidados y elige qué información compartir con PawPass."
+>
+  <div class="home">
+    <Nav />
+    <main>
+      <section class="home-hero home-width" aria-labelledby="home-title">
+        <div class="home-hero-copy">
+          <h1 id="home-title">Es familia.<br />Dale una identidad <em>tan única como ella.</em></h1>
+          <p>
+            Su foto, su historia y una forma de contactarte. Crea su ficha en
+            PawPass, descarga su identificación con QR y elige qué compartir.
           </p>
-        </article>
-        <article>
-          <h3>Su identidad, a un escaneo.</h3><p>
-            Comparte su enlace público en un QR. Quien lo abra verá la
-            información que hayas habilitado, sin necesidad de iniciar sesión.
-          </p>
-        </article>
-      </div>
-    </section>
-  </main>
-  <footer class="footer">
-    <div>
-      <a href="" aria-label="PawPass — Inicio"
-        ><img
-          src={`${base}logo_horizontal.png`}
-          alt="PawPass"
-          width="2172"
-          height="724"
-        /></a
-      ><span>Su identidad. Tu tranquilidad.</span><a href="login/">Mi cuenta</a>
-    </div>
-  </footer>
+          <div class="home-actions">
+            <a class="button" href={login}>Quiero registrar a mi mascota</a>
+            <a class="home-text-link" href={`${base}#su-espacio`}>
+              Mira lo que incluye
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="M8 3v10m-5-5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+          </div>
+          <p class="home-access-note">Empieza con tu cuenta. El registro de mascotas se habilita al asignarte cupos.</p>
+        </div>
+        <figure class="home-portrait">
+          <img
+            class="home-portrait-photo"
+            src={`${base}images/companion.jpg`}
+            width="1200"
+            height="1924"
+            alt="Un golden retriever lleva con delicadeza una pequeña flor amarilla en la boca"
+            fetchpriority="high"
+          />
+          <svg class="home-paw" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+            <ellipse cx="20" cy="36" rx="11" ry="15" transform="rotate(-25 20 36)" />
+            <ellipse cx="40" cy="20" rx="10" ry="15" transform="rotate(-8 40 20)" />
+            <ellipse cx="63" cy="21" rx="10" ry="15" transform="rotate(12 63 21)" />
+            <ellipse cx="82" cy="40" rx="10" ry="14" transform="rotate(30 82 40)" />
+            <path d="M26 63c5-9 12-22 24-22s18 12 24 21c15 22-5 28-23 21-18 8-39 2-25-20Z" />
+          </svg>
+          <figcaption>
+            <span>Para ti, es todo.</span>
+            <strong>Para ella, un lugar propio.</strong>
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="home-intro home-width" aria-label="Qué es PawPass">
+        <p>No es sólo una ficha.<br /><strong>Es una pequeña forma de cuidar ese gran vínculo.</strong></p>
+        <span>Su identidad. Sus cuidados. Lo que tú eliges compartir.</span>
+      </section>
+
+      <section class="home-features home-width" id="su-espacio" aria-labelledby="features-title">
+        <div class="home-features-copy">
+          <h2 id="features-title">Todo eso que la hace<br /><em>tan especial.</em></h2>
+          <p class="home-section-lead">Un espacio para conocerla mejor. Y para tener a mano lo que importa.</p>
+          <dl class="home-benefits">
+            <div>
+              <dt>Una ficha con su personalidad</dt>
+              <dd>Su nombre, su foto y esos detalles que la hacen única, en una página que puedes compartir.</dd>
+            </div>
+            <div>
+              <dt>Su identificación, lista para llevar</dt>
+              <dd>Descarga una imagen con sus datos públicos y un QR que abre su ficha actualizada, sin iniciar sesión.</dd>
+            </div>
+            <div>
+              <dt>Sus cuidados, en un mismo lugar</dt>
+              <dd>Organiza vacunas, medicamentos y visitas veterinarias. Tú decides qué registros hacer públicos.</dd>
+            </div>
+          </dl>
+        </div>
+        <figure class="home-example">
+          <div class="home-example-sheet">
+            <img class="home-example-brand" src={`${base}logo_horizontal.png`} alt="PawPass" width="2172" height="724" loading="lazy" />
+            <div class="home-example-pet">
+              <div>
+                <span class="home-example-name">Luna</span>
+                <span>Golden retriever</span>
+                <p>Experta en alegrarte<br />los días.</p>
+              </div>
+              <img src={`${base}images/companion.jpg`} alt="" width="1200" height="1924" loading="lazy" />
+            </div>
+            <div class="home-example-details">
+              <p><strong>Un poquito sobre mí</strong>Me gustan los paseos, las flores y estar cerca de mi persona favorita.</p>
+              <p><strong>Mi gente. Mi hogar.</strong>Un lugar para los datos de contacto que mi responsable quiera compartir.</p>
+            </div>
+          </div>
+          <figcaption>Así podría verse su espacio. Ejemplo ilustrativo con datos ficticios.</figcaption>
+        </figure>
+      </section>
+
+      <section class="home-privacy home-width" aria-labelledby="privacy-title">
+        <div>
+          <h2 id="privacy-title">Mucho amor.<br /><em>Sólo lo que quieras compartir.</em></h2>
+        </div>
+        <div>
+          <p>Su información privada y su ficha pública son espacios diferentes. Tú eliges qué datos de contacto, ubicación aproximada y cuidados pueden ver otras personas.</p>
+          <p class="home-privacy-note">El QR abre la ficha pública, no tu cuenta ni todo su historial.</p>
+        </div>
+      </section>
+
+      <section class="home-how home-width" id="como-funciona" aria-labelledby="how-title">
+        <div class="home-section-heading">
+          <h2 id="how-title">Su historia empieza <em>contigo.</em></h2>
+          <p>De tu cuenta a su pequeña gran ficha.</p>
+        </div>
+        <ol class="home-steps">
+          <li><h3>Crea tu cuenta</h3><p>Puedes entrar con Google para tener tu espacio en PawPass.</p></li>
+          <li><h3>Espera la habilitación</h3><p>La administración asigna los cupos a tu cuenta para que puedas registrar a tus mascotas.</p><p>Solicitalo aquí: <a target="_blank" href={`https://wa.me/573013971483`}>Solicitar acceso</a></p></li>
+          <li><h3>Dale vida a su ficha</h3><p>Añade su foto y sus datos, elige qué compartir y descarga su identificación con QR.</p></li>
+        </ol>
+      </section>
+
+      <section class="home-questions home-width" aria-labelledby="questions-title">
+        <div><h2 id="questions-title">Antes de dar<br /><em>la primera patita.</em></h2><p>Un par de cosas que vale la pena saber.</p></div>
+        <div class="home-answers">
+          <details>
+            <summary>¿Qué ve alguien que escanea el QR?</summary>
+            <p>La ficha pública de tu mascota, con la información que elegiste compartir. No necesita una cuenta para verla. Si publicas tu contacto con un número internacional válido, también podrá abrir WhatsApp desde la ficha.</p>
+          </details>
+          <details>
+            <summary>¿PawPass muestra su ubicación en tiempo real?</summary>
+            <p>No. Puedes compartir una ubicación aproximada que tú registras. PawPass no es un dispositivo GPS ni rastrea a tu mascota.</p>
+          </details>
+          <details>
+            <summary>¿Puedo cambiar la información después?</summary>
+            <p>Sí. Puedes editar su ficha y lo que haces público. El QR abre la versión actualizada; una identificación ya descargada conserva los datos del momento en que la generaste.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="home-invitation home-width" aria-labelledby="invitation-title">
+        <p class="home-handwriting">Ya tiene un lugar en tu corazón.</p>
+        <h2 id="invitation-title">Ahora, dale uno<br />en PawPass.</h2>
+        <p>Un pequeño perfil para ese amor enorme.</p>
+        <a class="button" href={login}>Crear mi cuenta</a>
+        <span>El primer paso para registrar a tu mascota.</span>
+      </section>
+    </main>
+    <footer class="home-footer home-width">
+      <a href={base} aria-label="PawPass — Inicio"><img src={`${base}logo_horizontal.png`} alt="PawPass" width="2172" height="724" loading="lazy" /></a>
+      <p>Una pequeña gran historia.<br />Compartida con cuidado.</p>
+      <a href={login}>Ingresar a mi cuenta</a>
+    </footer>
+  </div>
 </BaseLayout>

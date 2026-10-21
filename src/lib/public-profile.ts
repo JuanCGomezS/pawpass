@@ -1,5 +1,6 @@
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
+import { showIdentification } from "./pet-identification";
 import L from "leaflet";
 import { petAge, validCalendarDate, type CareKind } from "./pet-details";
 
@@ -248,7 +249,7 @@ async function load() {
       ) {
         coordinates = { latitude: place.latitude, longitude: place.longitude };
         const link = element<HTMLAnchorElement>("[data-map-link]");
-        link.href = `https://www.openstreetmap.org/?mlat=${place.latitude}&mlon=${place.longitude}#map=15/${place.latitude}/${place.longitude}`;
+        link.href = `https://www.google.com/maps/search/?api=1&query=${place.latitude}%2C${place.longitude}`;
         link.hidden = false;
       }
     }
@@ -271,9 +272,30 @@ async function load() {
     }
     element("[data-public-profile]").hidden = false;
     element("[data-public-empty]").hidden = true;
+    if (text(data.name) && import.meta.env.SITE) {
+      const profileUrl = new URL(
+        "p/",
+        `${import.meta.env.SITE.replace(/\/$/, "")}/`,
+      );
+      profileUrl.searchParams.set("id", publicId);
+      showIdentification(
+        element("[data-identification]"),
+        {
+          name: text(data.name),
+          species: text(data.species),
+          breed: text(data.breed),
+          birthDate: text(data.birthDate),
+          guardian: text(data.contact?.guardian),
+          photoUrl: text(data.photoUrl),
+        },
+        profileUrl.href,
+      );
+    } else if (text(data.name)) {
+      element("[data-identification]").hidden = false;
+      element("[data-id-status]").textContent =
+        "Configura SITE_URL para generar la identificación con el enlace público.";
+    }
     if (coordinates) showMap(coordinates.latitude, coordinates.longitude);
-    element("[data-profile-announcement]").textContent =
-      `La ficha de ${name} está lista.`;
   } catch {
     showError(
       "No pudimos abrir esta historia.",

@@ -236,6 +236,45 @@
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
+.story-identification {
+  padding: 64px 0;
+  border-bottom: 1px solid #ded5c7;
+}
+.identification-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  margin-bottom: 28px;
+}
+.identification-heading h2 {
+  margin-bottom: 12px;
+}
+.identification-heading p {
+  margin: 0;
+}
+.identification-heading .button {
+  gap: 10px;
+}
+.identification-preview {
+  display: block;
+  width: 70%;
+  margin-inline: auto;
+  border-radius: 24px;
+  box-shadow: 0 12px 32px rgb(62 57 49 / 10%);
+}
+.identification-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+}
+.pet-story .identification-note {
+  font-size: 0.8rem;
+  margin: 20px 0 0;
+  max-width: 80ch;
+}
 .story-intro,
 .story-contact {
   padding: 80px 0;
@@ -353,6 +392,56 @@
 .pet-story .care-disclaimer {
   margin: 36px 0 0;
   font-size: 0.75rem;
+}
+.pet-join {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 32px;
+  margin: 64px 0 32px;
+  padding: clamp(24px, 4vw, 48px);
+  border-radius: 28px;
+  background: #073f43;
+  color: #f8f3eb;
+}
+.pet-story .pet-join h2 {
+  max-width: 24ch;
+  margin-bottom: 16px;
+  font-family: "Baloo 2", sans-serif;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.pet-story .pet-join p {
+  max-width: 52ch;
+  margin: 0;
+  color: #dce7df;
+  white-space: normal;
+}
+.pet-join .pet-join-action {
+  background: #f8f3eb;
+  color: #073f43;
+  text-align: center;
+}
+.pet-join .pet-join-action:hover {
+  background: #eee7db;
+}
+.pet-join .pet-join-action:focus-visible {
+  outline: 3px solid #f8f3eb;
+  outline-offset: 5px;
+}
+@media (max-width: 700px) {
+  .pet-join {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-top: 40px;
+  }
+  .pet-join-action {
+    justify-self: start;
+    max-width: 100%;
+  }
 }
 .pet-story-footer {
   display: flex;

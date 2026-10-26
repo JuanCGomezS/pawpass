@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 import { showIdentification } from "./pet-identification";
+import { petMapIcon } from "./pet-map-icon";
 import L from "leaflet";
 import { petAge, validCalendarDate, type CareKind } from "./pet-details";
 
@@ -23,7 +24,7 @@ const dateLabel = (value: string) => {
   }).format(new Date(year, month - 1, day));
 };
 let locationMap: L.Map | undefined;
-function showMap(latitude: number, longitude: number) {
+function showMap(latitude: number, longitude: number, photoUrl: string) {
   const container = element("[data-public-map]");
   const status = element("[data-map-status]");
   container.hidden = false;
@@ -48,11 +49,10 @@ function showMap(latitude: number, longitude: number) {
       status.textContent = "";
     });
     tiles.addTo(locationMap);
-    L.circleMarker([latitude, longitude], {
-      radius: 10,
-      color: "#795638",
-      fillColor: "#c98b63",
-      fillOpacity: 0.85,
+    L.marker([latitude, longitude], {
+      icon: petMapIcon(photoUrl),
+      keyboard: false,
+      title: "Ubicación aproximada compartida",
     })
       .addTo(locationMap)
       .bindTooltip("Ubicación aproximada compartida");
@@ -295,7 +295,8 @@ async function load() {
       element("[data-id-status]").textContent =
         "Configura SITE_URL para generar la identificación con el enlace público.";
     }
-    if (coordinates) showMap(coordinates.latitude, coordinates.longitude);
+    if (coordinates)
+      showMap(coordinates.latitude, coordinates.longitude, text(data.photoUrl));
   } catch {
     showError(
       "No pudimos abrir esta historia.",

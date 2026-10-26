@@ -1,4 +1,5 @@
 import L from "leaflet";
+import { petMapIcon } from "./pet-map-icon";
 import "leaflet/dist/leaflet.css";
 import { observeSession } from "./session";
 import {
@@ -35,7 +36,8 @@ let selectedPhoto: File | undefined;
 let previewUrl: string | undefined;
 let selectedLocation: Location | undefined;
 let map: L.Map | undefined;
-let marker: L.CircleMarker | undefined;
+let marker: L.Marker | undefined;
+let mapPhotoUrl: string | undefined;
 let activeUid: string | undefined;
 let loading = false;
 const localToday = () => {
@@ -44,7 +46,173 @@ const localToday = () => {
 };
 input("pet-birth-date").max = localToday();
 
+const searchLocation = element<HTMLButtonElement>("[data-search-location]");
+const locateMe = element<HTMLButtonElement>("[data-locate-me]");
+const locationStatus = element("[data-location-status]");
+let locationOperation = 0;
+let locationSearchController: AbortController | undefined;
+
+function cancelLocationAction() {
+  locationOperation++;
+  locationSearchController?.abort();
+  locationSearchController = undefined;
+  searchLocation.disabled = locateMe.disabled = false;
+  locationStatus.textContent = "";
+}
+
+function placeLocation(latitude: number, longitude: number, center = true) {
+  if (
+    !map ||
+    !activeUid ||
+    fields.disabled ||
+    !Number.isFinite(latitude) ||
+    Math.abs(latitude) > 90 ||
+    !Number.isFinite(longitude) ||
+    Math.abs(longitude) > 180
+  )
+    return false;
+  const label = input("pet-location-label");
+  if (!label.value.trim()) label.value = "Ubicación aproximada";
+  selectedLocation = { label: label.value.trim(), latitude, longitude };
+  const point = L.latLng(latitude, longitude);
+  if (marker) marker.setLatLng(point);
+  else
+    marker = L.marker(point, {
+      icon: petMapIcon(mapPhotoUrl),
+      interactive: false,
+      keyboard: false,
+    }).addTo(map);
+  if (center) map.setView(point, 16);
+  return true;
+}
+
+searchLocation.addEventListener("click", async () => {
+  if (!map || !activeUid || fields.disabled) return;
+  cancelLocationAction();
+  const query = input("pet-location-label").value.trim();
+  if (!query) {
+    locationStatus.textContent =
+      "Escribe una dirección o barrio y su ciudad para buscar.";
+    input("pet-location-label").focus();
+    return;
+  }
+  const operation = locationOperation;
+  const controller = new AbortController();
+  locationSearchController = controller;
+  searchLocation.disabled = locateMe.disabled = true;
+  locationStatus.textContent = "Buscando la dirección…";
+  const timeout = window.setTimeout(() => controller.abort(), 12000);
+  try {
+    const url = new URL("https://photon.komoot.io/api/");
+    url.searchParams.set("q", query);
+    url.searchParams.set("limit", "1");
+    const response = await fetch(url, {
+      signal: controller.signal,
+      credentials: "omit",
+      referrerPolicy: "no-referrer",
+    });
+    if (!response.ok) throw new Error("Geocoding unavailable");
+    const result = await response.json();
+    if (operation !== locationOperation) return;
+    const feature = result.features?.[0];
+    const coordinates = feature?.geometry?.coordinates;
+    if (
+      feature?.geometry?.type !== "Point" ||
+      !Array.isArray(coordinates) ||
+      typeof coordinates[0] !== "number" ||
+      typeof coordinates[1] !== "number" ||
+      !placeLocation(coordinates[1], coordinates[0])
+    ) {
+      locationStatus.textContent =
+        "No encontramos esa dirección. Añade la ciudad o selecciona el punto en el mapa.";
+      return;
+    }
+    const properties = feature.properties ?? {};
+    const description = [
+      ...new Set(
+        [
+          properties.name,
+          properties.street,
+          properties.housenumber,
+          properties.district,
+          properties.city,
+          properties.state,
+          properties.country,
+        ].filter(
+          (value): value is string =>
+            typeof value === "string" && !!value.trim(),
+        ),
+      ),
+    ].join(", ");
+    locationStatus.textContent = `${description ? `Resultado: ${description}. ` : "Lugar encontrado. "}Revisa el punto antes de guardar el perfil.`;
+  } catch {
+    if (operation === locationOperation)
+      locationStatus.textContent = controller.signal.aborted
+        ? "La búsqueda tardó demasiado. Intenta de nuevo o selecciona el punto en el mapa."
+        : "No pudimos buscar la dirección. Intenta de nuevo o selecciona el punto en el mapa.";
+  } finally {
+    window.clearTimeout(timeout);
+    if (operation === locationOperation) {
+      locationSearchController = undefined;
+      searchLocation.disabled = locateMe.disabled = false;
+    }
+  }
+});
+
+input("pet-location-label").addEventListener("input", () => {
+  cancelLocationAction();
+  const label = input("pet-location-label").value.trim();
+  if (label && label !== selectedLocation?.label)
+    locationStatus.textContent =
+      "La dirección cambió. Pulsa Buscar o toca el mapa para confirmar el punto.";
+});
+input("pet-location-label").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.isComposing) {
+    event.preventDefault();
+    if (!searchLocation.disabled) searchLocation.click();
+  }
+});
+
+locateMe.addEventListener("click", () => {
+  if (!map || !activeUid || fields.disabled) return;
+  cancelLocationAction();
+  if (!window.isSecureContext || !navigator.geolocation) {
+    locationStatus.textContent =
+      "Tu navegador necesita una conexión HTTPS y acceso a la ubicación. Puedes buscar la dirección o tocar el mapa.";
+    return;
+  }
+  const operation = locationOperation;
+  searchLocation.disabled = locateMe.disabled = true;
+  locationStatus.textContent =
+    "Buscando tu ubicación… Permite el acceso si el navegador lo solicita.";
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      if (operation !== locationOperation) return;
+      searchLocation.disabled = locateMe.disabled = false;
+      locationStatus.textContent = placeLocation(
+        coords.latitude,
+        coords.longitude,
+      )
+        ? "Ubicación obtenida. Revisa la dirección y ajusta el punto antes de guardar si no quieres compartir una ubicación precisa."
+        : "No pudimos obtener un punto válido. Puedes seleccionarlo en el mapa.";
+    },
+    (error) => {
+      if (operation !== locationOperation) return;
+      searchLocation.disabled = locateMe.disabled = false;
+      locationStatus.textContent =
+        error.code === 1
+          ? "No diste permiso de ubicación. Puedes habilitarlo en tu navegador, buscar la dirección o tocar el mapa."
+          : error.code === 3
+            ? "Tu ubicación tardó demasiado. Intenta de nuevo o busca la dirección."
+            : "No pudimos obtener tu ubicación. Busca la dirección o selecciona un punto en el mapa.";
+    },
+    { enableHighAccuracy: false, timeout: 12000, maximumAge: 0 },
+  );
+});
+
 function showPreview(url?: string) {
+  mapPhotoUrl = url;
+  marker?.setIcon(petMapIcon(url));
   const target = element("[data-preview-image]");
   target.replaceChildren();
   element("[data-preview-name]").textContent = input("pet-name").value;
@@ -259,16 +427,19 @@ for (const kind of kinds) {
 observeSession(async (state) => {
   if (state.status === "loading") return;
   if (state.status === "configured-error") {
+    cancelLocationAction();
     status.textContent = state.message;
     return;
   }
   if (state.status !== "signed-in") {
+    cancelLocationAction();
     activeUid = undefined;
     content.hidden = true;
     location.assign(`${import.meta.env.BASE_URL}login/`);
     return;
   }
   if (activeUid && activeUid !== state.session.uid) {
+    cancelLocationAction();
     content.hidden = true;
     activeUid = undefined;
     pet = null;
@@ -331,21 +502,17 @@ observeSession(async (state) => {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     if (pet.location)
-      marker = L.circleMarker(initial, { color: "#a65d43", radius: 8 }).addTo(
-        map,
-      );
+      marker = L.marker(initial, {
+        icon: petMapIcon(mapPhotoUrl),
+        interactive: false,
+        keyboard: false,
+      }).addTo(map);
     map.on("click", (event) => {
-      selectedLocation = {
-        label: input("pet-location-label").value.trim(),
-        latitude: event.latlng.lat,
-        longitude: event.latlng.lng,
-      };
-      if (marker) marker.setLatLng(event.latlng);
-      else
-        marker = L.circleMarker(event.latlng, {
-          color: "#a65d43",
-          radius: 8,
-        }).addTo(map!);
+      if (fields.disabled) return;
+      cancelLocationAction();
+      if (placeLocation(event.latlng.lat, event.latlng.lng, false))
+        locationStatus.textContent =
+          "Punto seleccionado. Revisa la dirección y guarda el perfil para conservarlo.";
     });
     status.textContent = "Un perfil completo. Una historia que crece contigo.";
     try {
@@ -366,6 +533,14 @@ observeSession(async (state) => {
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!pet || !activeUid) return;
+  cancelLocationAction();
+  const locationLabel = input("pet-location-label").value.trim();
+  if (locationLabel && locationLabel !== selectedLocation?.label) {
+    message.textContent =
+      "Confirma la ubicación antes de guardar: busca la dirección o selecciona su punto en el mapa.";
+    input("pet-location-label").focus();
+    return;
+  }
   if (!pet.publicId) {
     message.textContent =
       "Esta mascota necesita un identificador público antes de poder guardar. Contacta con la administración.";
@@ -423,6 +598,8 @@ form.addEventListener("submit", async (event) => {
   }
 });
 window.addEventListener("pagehide", () => {
+  cancelLocationAction();
   map?.remove();
+  map = undefined;
   if (previewUrl) URL.revokeObjectURL(previewUrl);
 });

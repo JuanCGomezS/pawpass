@@ -30,10 +30,49 @@ import Nav from "../../components/Nav.astro";
             Un superadmin debe asignarte cupos antes de que puedas crear
             mascotas.
           </p>
+          <a
+            class="button quota-request"
+            href={`https://wa.me/573013971483?text=${encodeURIComponent("Hola, quisiera solicitar más cupos para registrar mascotas en PawPass.")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Solicitar más cupos por WhatsApp (se abre en otra pestaña)"
+          >
+            <svg viewBox="0 0 100 100" width="22" height="22" aria-hidden="true" focusable="false">
+              <ellipse cx="20" cy="36" rx="11" ry="15" transform="rotate(-25 20 36)" />
+              <ellipse cx="40" cy="20" rx="10" ry="15" transform="rotate(-8 40 20)" />
+              <ellipse cx="63" cy="21" rx="10" ry="15" transform="rotate(12 63 21)" />
+              <ellipse cx="82" cy="40" rx="10" ry="14" transform="rotate(30 82 40)" />
+              <path d="M26 63c5-9 12-22 24-22s18 12 24 21c15 22-5 28-23 21-18 8-39 2-25-20Z" />
+            </svg>
+            <span>Solicitar más cupos</span>
+          </a>
         </aside>
       </div>
     </section>
-  </main><script>
+  </main>
+  <style>
+    .quota-request {
+      display: flex;
+      width: fit-content;
+      max-width: 100%;
+      margin: 24px auto 0;
+      padding: 13px 20px;
+      border-radius: 999px;
+      background: var(--navy);
+      color: var(--cream);
+      text-align: center;
+      font-size: 0.85rem;
+    }
+    .quota-request svg {
+      flex-shrink: 0;
+      fill: #f0c9a9;
+    }
+    .quota-request:focus-visible {
+      outline: 3px solid var(--coral);
+      outline-offset: 4px;
+    }
+  </style>
+  <script>
     import {
       accountForUser,
       availableSlots,

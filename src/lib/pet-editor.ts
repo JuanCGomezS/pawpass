@@ -1,5 +1,6 @@
 import L from "leaflet";
 import { petMapIcon } from "./pet-map-icon";
+import { identificationEditor } from "./pet-identification-editor";
 import "leaflet/dist/leaflet.css";
 import { observeSession } from "./session";
 import {
@@ -39,7 +40,28 @@ let map: L.Map | undefined;
 let marker: L.Marker | undefined;
 let mapPhotoUrl: string | undefined;
 let activeUid: string | undefined;
-let loading = false;
+let pageUid: string | undefined;
+let sessionVersion = 0;
+let sessionReady = false;
+const printEditor = identificationEditor(form, () =>
+  activeUid && sessionReady && pet
+    ? {
+        visibility: {
+          basics: input("show-basics").checked,
+          location: input("show-location").checked,
+          contact: input("show-contact").checked,
+        },
+        location:
+          input("pet-location-label").value.trim() === selectedLocation?.label
+            ? selectedLocation
+            : undefined,
+        photoUrl: mapPhotoUrl,
+        phone: input("pet-phone").value,
+        weightKg: Number(input("pet-weight").value),
+        sex: input("pet-sex").value as PetProfile["sex"],
+      }
+    : null,
+);
 const localToday = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -83,6 +105,7 @@ function placeLocation(latitude: number, longitude: number, center = true) {
       keyboard: false,
     }).addTo(map);
   if (center) map.setView(point, 16);
+  printEditor.refresh();
   return true;
 }
 
@@ -212,6 +235,7 @@ locateMe.addEventListener("click", () => {
 
 function showPreview(url?: string) {
   mapPhotoUrl = url;
+  printEditor.refresh();
   marker?.setIcon(petMapIcon(url));
   const target = element("[data-preview-image]");
   target.replaceChildren();
@@ -425,6 +449,13 @@ for (const kind of kinds) {
 }
 
 observeSession(async (state) => {
+  const version = ++sessionVersion;
+  sessionReady = state.status === "signed-in";
+  if (!sessionReady) {
+    fields.disabled = true;
+    content.hidden = true;
+    printEditor.reset();
+  }
   if (state.status === "loading") return;
   if (state.status === "configured-error") {
     cancelLocationAction();
@@ -434,11 +465,12 @@ observeSession(async (state) => {
   if (state.status !== "signed-in") {
     cancelLocationAction();
     activeUid = undefined;
+    pet = null;
     content.hidden = true;
     location.assign(`${import.meta.env.BASE_URL}login/`);
     return;
   }
-  if (activeUid && activeUid !== state.session.uid) {
+  if (pageUid && pageUid !== state.session.uid) {
     cancelLocationAction();
     content.hidden = true;
     activeUid = undefined;
@@ -446,17 +478,21 @@ observeSession(async (state) => {
     location.reload();
     return;
   }
-  activeUid = state.session.uid;
-  if (loading || pet) return;
+  pageUid = activeUid = state.session.uid;
+  fields.disabled = false;
+  if (pet) {
+    content.hidden = false;
+    printEditor.load(pet.identification);
+    return;
+  }
   if (!petId || petId.includes("/")) {
     status.textContent = "El enlace no identifica una mascota.";
     return;
   }
   const uid = activeUid;
-  loading = true;
   try {
     const loaded = await petById(petId);
-    if (uid !== activeUid) return;
+    if (uid !== activeUid || version !== sessionVersion) return;
     if (!loaded) {
       status.textContent = "No encontramos esta mascota.";
       return;
@@ -483,6 +519,7 @@ observeSession(async (state) => {
     selectedLocation = pet.location;
     input("pet-photo-presentation").value = pet.photoPresentation ?? "normal";
     showPreview(pet.photoUrl);
+    printEditor.load(pet.identification);
     content.hidden = false;
     if (pet.publicId) {
       const link = element<HTMLAnchorElement>("[data-public-link]");
@@ -516,23 +553,25 @@ observeSession(async (state) => {
     });
     status.textContent = "Un perfil completo. Una historia que crece contigo.";
     try {
-      records = await careRecordsForPet(pet.id);
+      const loadedRecords = await careRecordsForPet(pet.id);
+      if (version !== sessionVersion) return;
+      records = loadedRecords;
       for (const kind of kinds) renderRecords(kind);
     } catch {
       element("[data-records-status]").textContent =
         "No pudimos cargar el historial. Recarga la página para volver a intentarlo.";
     }
   } catch {
+    if (version !== sessionVersion) return;
     status.textContent =
       "No pudimos abrir la ficha. Comprueba tu conexión y permisos.";
-  } finally {
-    loading = false;
   }
 });
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!pet || !activeUid) return;
+  if (!pet || !activeUid || !sessionReady || fields.disabled) return;
+  const version = sessionVersion;
   cancelLocationAction();
   const locationLabel = input("pet-location-label").value.trim();
   if (locationLabel && locationLabel !== selectedLocation?.label) {
@@ -580,24 +619,42 @@ form.addEventListener("submit", async (event) => {
         health: input("show-health").checked,
       },
     };
+    printEditor.ensureReady();
     if (selectedPhoto)
       Object.assign(updated, await uploadPetPhoto(pet.id, selectedPhoto));
+    if (version !== sessionVersion) return;
+    updated.identification = await printEditor.forSave(updated);
+    if (version !== sessionVersion) return;
     await savePetProfile(updated);
+    if (version !== sessionVersion) return;
     pet = updated;
     selectedPhoto = undefined;
     fileInput.value = "";
+    showPreview(updated.photoUrl);
+    printEditor.load(updated.identification);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      previewUrl = undefined;
+    }
     message.textContent =
       "Perfil guardado. La ficha pública muestra únicamente lo que elegiste compartir.";
   } catch (error) {
+    if (version !== sessionVersion) return;
     message.textContent =
       error instanceof Error
         ? error.message
         : "No pudimos guardar. Revisa tu conexión.";
   } finally {
-    fields.disabled = false;
+    if (version === sessionVersion) fields.disabled = false;
   }
 });
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) location.reload();
+});
 window.addEventListener("pagehide", () => {
+  sessionReady = false;
+  sessionVersion++;
+  printEditor.reset();
   cancelLocationAction();
   map?.remove();
   map = undefined;

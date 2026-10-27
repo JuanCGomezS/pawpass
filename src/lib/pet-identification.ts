@@ -1,5 +1,6 @@
 import qrcode from "qrcode-generator";
 import { validCalendarDate } from "./pet-details";
+import type { IdentificationSettings } from "./identification-settings";
 
 type Identification = {
   name: string;
@@ -8,6 +9,18 @@ type Identification = {
   birthDate: string;
   guardian: string;
   photoUrl: string;
+  identification: IdentificationSettings;
+  phone: string;
+  weight: string;
+  sex: string;
+  location?: { latitude: number; longitude: number; label: string };
+};
+
+type Extras = {
+  location: boolean;
+  phone: boolean;
+  weight: boolean;
+  sex: boolean;
 };
 
 const ink = "#005158";
@@ -132,6 +145,8 @@ async function createCard(
   face: "front" | "back",
   logo: HTMLImageElement,
   photo: HTMLImageElement | null,
+  extras: Extras,
+  mapImage?: HTMLImageElement,
 ): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = 1536;
@@ -226,7 +241,22 @@ async function createCard(
   };
 
   if (face === "back") {
-    ctx.drawImage(logo, 80, 42, 460, 153);
+    const scale = Math.min(
+      canvas.width / logo.naturalWidth,
+      canvas.height / logo.naturalHeight,
+    );
+    const width = logo.naturalWidth * scale;
+    const height = logo.naturalHeight * scale;
+    ctx.save();
+    ctx.globalAlpha = 0.09;
+    ctx.drawImage(
+      logo,
+      (canvas.width - width) / 2,
+      (canvas.height - height) / 2,
+      width,
+      height,
+    );
+    ctx.restore();
     ctx.fillStyle = "#cde3d9";
     ctx.beginPath();
     ctx.roundRect(724, 72, 764, 72, 36);
@@ -235,29 +265,61 @@ async function createCard(
     ctx.fillStyle = ink;
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.fillText("MI FICHA Y MI FAMILIA", 1106, 110);
+    ctx.fillText("UNA HUELLA EN TU CORAZÓN", 1106, 110);
     ctx.textAlign = "left";
-    fitText(ctx, data.name, 80, 238, 740, 152, 128, "Baloo 2");
-    let y = 432;
-    if (validCalendarDate(data.birthDate)) {
-      label("NACIMIENTO", 80, y, 400, "#ffe3d4", "calendar");
-      fitText(
-        ctx,
-        data.birthDate.split("-").reverse().join("/"),
-        88,
-        y + 66,
-        730,
-        112,
-        88,
-        "Baloo 2",
-      );
-      y += 196;
-    }
+    ctx.font = '500 72px "Caveat"';
+    ctx.fillStyle = "#945443";
+    ctx.fillText("Mi lugar favorito", 96, 92);
+    ctx.fillText("es junto a ti.", 148, 166);
+    heart(590, 95, 56, coral);
+    ctx.strokeStyle = "#ffb79e";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(148, 205);
+    ctx.quadraticCurveTo(300, 219, 442, 200);
+    ctx.stroke();
+    fitText(
+      ctx,
+      data.name,
+      80,
+      238,
+      740,
+      mapImage ? 102 : 152,
+      mapImage ? 84 : 128,
+      "Baloo 2",
+    );
+    let y = mapImage ? 354 : 432;
     if (data.guardian) {
-      label("RESPONSABLE", 80, y, 420, "#e0eee5", "person");
-      fitText(ctx, data.guardian, 88, y + 66, 730, 130, 84, "Baloo 2");
+      if (mapImage) {
+        fitText(ctx, "Responsable", 80, y + 8, 285, 68, 44);
+        fitText(ctx, data.guardian, 375, y, 445, 82, 62, "Baloo 2");
+        y += 92;
+      } else {
+        label("RESPONSABLE", 80, y, 420, "#e0eee5", "person");
+        fitText(ctx, data.guardian, 88, y + 66, 730, 130, 84, "Baloo 2");
+        y += 196;
+      }
     }
-    if (!validCalendarDate(data.birthDate) && !data.guardian) {
+    if (extras.phone && data.phone) {
+      if (mapImage) {
+        fitText(ctx, "Teléfono", 80, y + 8, 245, 68, 44);
+        fitText(ctx, data.phone, 335, y, 485, 82, 60, "Baloo 2");
+      } else {
+        label("TELÉFONO", 80, y, 320, "#ffe3d4");
+        fitText(ctx, data.phone, 88, y + 66, 730, 112, 76, "Baloo 2");
+      }
+    }
+    if (mapImage && data.location) {
+      fitText(ctx, data.location.label, 80, 548, 740, 64, 48, "Baloo 2");
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(80, 608, 740, 220, 24);
+      ctx.clip();
+      ctx.drawImage(mapImage, 80, 608, 740, 220);
+      ctx.restore();
+    }
+    if (!data.guardian && !extras.phone && !mapImage) {
       fitText(
         ctx,
         "Consulta mi ficha pública para ver la información que mi familia comparte.",
@@ -270,7 +332,9 @@ async function createCard(
       );
     }
     paw(ctx, 1400, 175, 72, "#ffb79e");
-    heart(814, 204, 52, coral);
+    heart(842, 204, 52, coral);
+    heart(28, 465, 30, "#e6a38c");
+    heart(848, 634, 38, "#78b8aa");
   } else {
     ctx.fillStyle = "rgba(207, 224, 207, 0.58)";
     ctx.beginPath();
@@ -372,21 +436,42 @@ async function createCard(
     }
 
     label("NOMBRE", 630, 236, 245, "#e0eee5");
-    fitText(ctx, data.name, 630, 302, 870, 190, 160, "Baloo 2");
+    fitText(ctx, data.name, 630, 302, 870, 150, 126, "Baloo 2");
     ctx.strokeStyle = "#ffd2bf";
     ctx.lineWidth = 12;
     ctx.beginPath();
-    ctx.moveTo(638, 500);
-    ctx.bezierCurveTo(765, 519, 925, 479, 1050, 502);
+    ctx.moveTo(638, 458);
+    ctx.bezierCurveTo(765, 477, 925, 437, 1050, 460);
     ctx.stroke();
 
     if (data.species) {
-      label("ESPECIE", 630, 602, 285, "#ffe3d4", "paw");
-      fitText(ctx, data.species, 638, 672, 300, 174, 88, "Baloo 2");
+      label("ESPECIE", 630, 500, 285, "#ffe3d4", "paw");
+      fitText(ctx, data.species, 638, 568, 300, 116, 80, "Baloo 2");
     }
     if (data.breed) {
-      label("RAZA", 980, 602, 250, "#d7e9df", "paw");
-      fitText(ctx, data.breed, 988, 672, 500, 174, 88, "Baloo 2");
+      label("RAZA", 980, 500, 250, "#d7e9df", "paw");
+      fitText(ctx, data.breed, 988, 568, 500, 116, 80, "Baloo 2");
+    }
+    if (validCalendarDate(data.birthDate)) {
+      label("NACIMIENTO", 630, 704, 400, "#ffe3d4", "calendar");
+      fitText(
+        ctx,
+        data.birthDate.split("-").reverse().join("/"),
+        638,
+        772,
+        400,
+        82,
+        66,
+        "Baloo 2",
+      );
+    }
+    if (extras.sex && data.sex) {
+      label("SEXO", 1060, 704, 180, "#d7e9df");
+      fitText(ctx, data.sex, 1068, 772, 180, 82, 60, "Baloo 2");
+    }
+    if (extras.weight && data.weight) {
+      label("PESO", 1270, 704, 218, "#ffe3d4");
+      fitText(ctx, data.weight, 1278, 772, 210, 82, 60, "Baloo 2");
     }
   }
 
@@ -427,6 +512,15 @@ async function createCard(
     const side = (count + 8) * cell;
     const left = Math.round(1190 - side / 2);
     const top = Math.round(500 - side / 2);
+    ctx.save();
+    ctx.strokeStyle = "#78b8aa";
+    ctx.lineWidth = 4;
+    ctx.setLineDash([7, 11]);
+    ctx.beginPath();
+    ctx.roundRect(left - 16, top - 16, side + 32, side + 32, 24);
+    ctx.stroke();
+    ctx.restore();
+    heart(left + side + 22, top + side - 44, 42, coral);
     ctx.fillStyle = "#fff";
     ctx.fillRect(left, top, side, side);
     ctx.fillStyle = "#000";
@@ -473,6 +567,29 @@ export function showIdentification(
   const actions = section.querySelector<HTMLElement>("[data-id-actions]")!;
   const retry = section.querySelector<HTMLButtonElement>("[data-id-retry]")!;
   const status = section.querySelector<HTMLElement>("[data-id-status]")!;
+  const settings = data.identification;
+  const extras: Extras = {
+    location: Boolean(
+      settings.location &&
+        data.location &&
+        settings.mapImage &&
+        settings.mapImage.latitude === data.location.latitude &&
+        settings.mapImage.longitude === data.location.longitude &&
+        settings.mapImage.photoUrl === data.photoUrl &&
+        settings.mapImage.zoom === settings.mapZoom,
+    ),
+    phone: settings.phone && Boolean(data.phone),
+    weight: settings.weight && Boolean(data.weight),
+    sex: settings.sex && Boolean(data.sex),
+  };
+  let cachedMap: HTMLImageElement | undefined;
+  let assets:
+    | {
+        logo: HTMLImageElement;
+        photo: HTMLImageElement | null;
+        squareLogo: HTMLImageElement;
+      }
+    | undefined;
   let objectUrls: string[] = [];
   let isBack = false;
   let preparing = false;
@@ -501,32 +618,62 @@ export function showIdentification(
   const prepare = async () => {
     if (preparing || disposed) return;
     preparing = true;
+    flip.hidden = actions.hidden = sideLabel.hidden = true;
     retry.hidden = true;
+    release();
     status.textContent = "Preparando las dos caras de la identificación…";
     try {
-      const [logo, photo] = await Promise.all([
-        loadImage(`${import.meta.env.BASE_URL}logo_horizontal.png`),
-        data.photoUrl.startsWith("https://")
-          ? loadImage(data.photoUrl)
-          : Promise.resolve(null),
-        document.fonts.load('600 72px "Baloo 2"'),
-        document.fonts.load('600 32px "Manrope"'),
-      ]);
+      if (!assets) {
+        const [logo, photo, squareLogo] = await Promise.all([
+          loadImage(`${import.meta.env.BASE_URL}logo_horizontal.png`),
+          data.photoUrl.startsWith("https://")
+            ? loadImage(data.photoUrl)
+            : Promise.resolve(null),
+          loadImage(`${import.meta.env.BASE_URL}logo.png`),
+          document.fonts.load('600 72px "Baloo 2"'),
+          document.fonts.load('600 32px "Manrope"'),
+          document.fonts.load('500 72px "Caveat"'),
+        ]);
+        assets = { logo, photo, squareLogo };
+      }
+      if (disposed) return;
+      if (extras.location && !cachedMap && settings.mapImage) {
+        cachedMap = await loadImage(settings.mapImage.url);
+      }
       if (disposed) return;
       const blobs = await Promise.all([
-        createCard(data, publicUrl, "front", logo, photo),
-        createCard(data, publicUrl, "back", logo, photo),
+        createCard(data, publicUrl, "front", assets.logo, assets.photo, extras),
+        createCard(
+          data,
+          publicUrl,
+          "back",
+          assets.squareLogo,
+          assets.photo,
+          extras,
+          extras.location ? cachedMap : undefined,
+        ),
       ]);
       if (disposed) return;
       for (const blob of blobs) objectUrls.push(URL.createObjectURL(blob));
       front.src = objectUrls[0];
       back.src = objectUrls[1];
-      front.alt = `Frente de la identificación de ${data.name}. ${[data.species, data.breed].filter(Boolean).join(". ")}.`;
-      back.alt = `Reverso de la identificación de ${data.name}. ${[
+      front.alt = `Frente de la identificación de ${data.name}. ${[
+        data.species,
+        data.breed,
         validCalendarDate(data.birthDate)
           ? `Nacimiento: ${data.birthDate.split("-").reverse().join("/")}`
           : "",
+        extras.weight ? `Peso: ${data.weight}` : "",
+        extras.sex ? `Sexo: ${data.sex}` : "",
+      ]
+        .filter(Boolean)
+        .join(". ")}.`;
+      back.alt = `Reverso de la identificación de ${data.name}. ${[
         data.guardian ? `Responsable: ${data.guardian}` : "",
+        extras.phone ? `Teléfono: ${data.phone}` : "",
+        extras.location && data.location
+          ? `Mapa de la ubicación compartida: ${data.location.label}`
+          : "",
       ]
         .filter(Boolean)
         .join(". ")}. El QR abre su ficha pública.`;

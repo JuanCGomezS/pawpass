@@ -34,8 +34,8 @@ const kinds = [
   <Nav />
   <main class="app-grid pet-workspace">
     <aside class="side-nav">
-      <a href="mis-mascotas/">Mis mascotas</a><a href="#identidad">Identidad</a
-      ><a href="#cuidados">Salud e historial</a>
+      <a href="mis-mascotas/">Mis mascotas</a><a data-editor-section="identidad">Identidad</a
+      ><a data-editor-section="cuidados">Salud e historial</a>
     </aside>
     <section>
       <div class="page-heading">
@@ -257,7 +257,32 @@ const kinds = [
                 ></span
               ><input class="switch" id="show-health" type="checkbox" /></label
             >
-            <div class="editor-save">
+            <section data-identification-editor aria-labelledby="print-settings-title">
+            <div class="editor-section-heading">
+              <h2 id="print-settings-title">Su identificación, lista para compartir.</h2>
+              <p>Elige los datos y el encuadre que tendrá la tarjeta pública. Los visitantes solo podrán verla y descargarla.</p>
+            </div>
+            <p class="small">Primero activa arriba la información que quieres compartir. Estas opciones no cambian los permisos de publicación.</p>
+            <div class="print-options">
+              <label><input type="checkbox" data-print-extra="location" /> Ubicación con su foto</label>
+              <label><input type="checkbox" data-print-extra="phone" /> Teléfono del responsable</label>
+              <label><input type="checkbox" data-print-extra="weight" /> Peso</label>
+              <label><input type="checkbox" data-print-extra="sex" /> Sexo</label>
+            </div>
+            <div data-print-map-preview hidden>
+              <p class="small">Acerca o aleja para elegir cuánto entorno se verá. La ubicación permanece fija.</p>
+              <div class="print-map" data-print-map role="img" aria-label="Encuadre del mapa de la identificación con la foto de tu mascota"></div>
+              <div class="photo-tools print-map-tools">
+                <button type="button" class="button button-outline" data-print-farther aria-label="Alejar el mapa">−</button>
+                <output data-print-zoom aria-live="polite">Zoom 16</output>
+                <button type="button" class="button button-outline" data-print-closer aria-label="Acercar el mapa">+</button>
+                <button type="button" class="button button-outline" data-print-map-refresh>Actualizar mapa</button>
+              </div>
+              <p class="small" role="status" data-print-map-status></p>
+              <p class="small">Mapa de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>. El encuadre se guarda como imagen, no es seguimiento en vivo. Ocultarlo después no revoca copias ni enlaces de imágenes que ya se hayan compartido.</p>
+            </div>
+          </section>
+          <div class="editor-save">
               <button class="button" type="submit">Guardar perfil</button><p
                 class="small"
                 role="status"
@@ -382,6 +407,11 @@ const kinds = [
       </div>
     </section>
   </main>
+  <script is:inline>
+    for (const link of document.querySelectorAll("[data-editor-section]")) {
+      link.href = `${location.origin}${location.pathname}${location.search}#${link.dataset.editorSection}`;
+    }
+  </script>
   <script>
     import "../../lib/pet-editor";
   </script>

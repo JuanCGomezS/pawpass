@@ -17,6 +17,10 @@ import {
 } from "firebase/storage";
 import { db, storage } from "./firebase";
 import {
+  readIdentificationSettings,
+  type IdentificationSettings,
+} from "./identification-settings";
+import {
   type CareKind,
   type CareRecord,
   validateBirthDate,
@@ -53,6 +57,7 @@ export type PetProfile = {
   phone?: string;
   allergies?: string;
   conditions?: string;
+  identification?: IdentificationSettings;
   visibility: {
     basics: boolean;
     location: boolean;
@@ -87,6 +92,62 @@ function optionalText(value?: string) {
 }
 function validatePetDetails(pet: PetProfile) {
   validateBirthDate(pet.birthDate);
+  if (pet.identification !== undefined) {
+    const settings = pet.identification;
+    if (
+      !settings ||
+      typeof settings !== "object" ||
+      Array.isArray(settings) ||
+      Object.keys(settings).some(
+        (key) =>
+          ![
+            "location",
+            "phone",
+            "weight",
+            "sex",
+            "mapZoom",
+            "mapImage",
+          ].includes(key),
+      ) ||
+      ["location", "phone", "weight", "sex"].some(
+        (key) =>
+          typeof settings[key as keyof IdentificationSettings] !== "boolean",
+      ) ||
+      !Number.isInteger(settings.mapZoom) ||
+      settings.mapZoom < 12 ||
+      settings.mapZoom > 19
+    )
+      throw new Error("La configuración de identificación no es válida.");
+    if (settings.mapImage !== undefined) {
+      const image = settings.mapImage;
+      if (
+        !image ||
+        typeof image !== "object" ||
+        Array.isArray(image) ||
+        Object.keys(image).length !== 5 ||
+        Object.keys(image).some(
+          (key) =>
+            !["url", "latitude", "longitude", "photoUrl", "zoom"].includes(key),
+        ) ||
+        typeof image.url !== "string" ||
+        !/^https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?(\/[^ ]*)?$/.test(image.url) ||
+        image.url.length > 2048 ||
+        typeof image.photoUrl !== "string" ||
+        !/^https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?(\/[^ ]*)?$/.test(
+          image.photoUrl,
+        ) ||
+        image.photoUrl.length > 2048 ||
+        !Number.isFinite(image.latitude) ||
+        Math.abs(image.latitude) > 90 ||
+        !Number.isFinite(image.longitude) ||
+        Math.abs(image.longitude) > 180 ||
+        !Number.isInteger(image.zoom) ||
+        image.zoom < 12 ||
+        image.zoom > 19
+      )
+        throw new Error("La imagen del mapa de identificación no es válida.");
+    }
+  }
   if (
     pet.photoPresentation &&
     !["normal", "zoom"].includes(pet.photoPresentation)
@@ -138,6 +199,42 @@ export function publicProjection(pet: PetProfile) {
       if (value) profile[field] = value;
     }
     if (pet.weightKg !== undefined) profile.weightKg = pet.weightKg;
+    if (pet.identification) {
+      const settings = readIdentificationSettings(pet.identification);
+      const image = settings.mapImage;
+      const location = pet.location;
+      const locationEnabled =
+        settings.location &&
+        pet.visibility.location &&
+        location != null &&
+        Number.isFinite(location.latitude) &&
+        Number.isFinite(location.longitude) &&
+        Math.abs(location.latitude) <= 90 &&
+        Math.abs(location.longitude) <= 180 &&
+        typeof pet.photoUrl === "string" &&
+        /^https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?(\/[^ ]*)?$/.test(pet.photoUrl) &&
+        image != null &&
+        image.latitude === location.latitude &&
+        image.longitude === location.longitude &&
+        image.photoUrl === pet.photoUrl &&
+        image.zoom === settings.mapZoom;
+      profile.identification = {
+        location: locationEnabled,
+        phone:
+          settings.phone &&
+          pet.visibility.contact === true &&
+          Boolean(optionalText(pet.phone)),
+        weight:
+          settings.weight &&
+          typeof pet.weightKg === "number" &&
+          Number.isFinite(pet.weightKg) &&
+          pet.weightKg > 0 &&
+          pet.weightKg <= 500,
+        sex: settings.sex && (pet.sex === "Macho" || pet.sex === "Hembra"),
+        mapZoom: settings.mapZoom,
+        ...(locationEnabled ? { mapImage: image } : {}),
+      };
+    }
   }
   if (pet.visibility.contact) {
     const guardian = optionalText(pet.guardian);
@@ -197,6 +294,7 @@ export async function petById(petId: string): Promise<PetProfile | null> {
     ...data,
     id: snapshot.id,
     photoPresentation: data.photoPresentation === "zoom" ? "zoom" : "normal",
+    identification: readIdentificationSettings(data.identification),
     visibility: {
       basics: data.visibility?.basics === true,
       location: data.visibility?.location === true,
@@ -315,6 +413,7 @@ export async function createPet(input: {
     name: input.name,
     species: input.species,
     breed: input.breed,
+    identification: readIdentificationSettings(undefined),
     visibility: { basics: true, location: false },
   };
   const batch = writeBatch(databaseInstance);
@@ -363,6 +462,7 @@ export async function savePetProfile(pet: PetProfile): Promise<void> {
     photoUrl: pet.photoUrl ?? null,
     photoPath: pet.photoPath ?? null,
     photoPresentation: pet.photoPresentation ?? "normal",
+    identification: pet.identification ?? readIdentificationSettings(undefined),
     location: pet.location ?? null,
     birthDate: optionalText(pet.birthDate) ?? null,
     sex: optionalText(pet.sex) ?? null,

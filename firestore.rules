@@ -22,9 +22,61 @@ service cloud.firestore {
         get(petPath(get(profilePath(publicId)).data.petId)).data.publicId == publicId &&
         get(petPath(get(profilePath(publicId)).data.petId)).data.visibility.get('health', false) == true;
     }
+    function validMapImage(image) {
+      return image is map &&
+        image.keys().hasAll(['url', 'latitude', 'longitude', 'photoUrl', 'zoom']) &&
+        image.keys().hasOnly(['url', 'latitude', 'longitude', 'photoUrl', 'zoom']) &&
+        image.url is string && image.url.size() <= 2048 && image.url.matches('^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[^ ]*)?$') &&
+        image.photoUrl is string && image.photoUrl.size() <= 2048 && image.photoUrl.matches('^https://[A-Za-z0-9.-]+(:[0-9]+)?(/[^ ]*)?$') &&
+        image.latitude is number && image.latitude >= -90 && image.latitude <= 90 &&
+        image.longitude is number && image.longitude >= -180 && image.longitude <= 180 &&
+        image.zoom is int && image.zoom >= 12 && image.zoom <= 19;
+    }
+    function validIdentificationOptions(settings) {
+      return settings is map &&
+        settings.keys().hasAll(['location', 'phone', 'weight', 'sex', 'mapZoom']) &&
+        settings.keys().hasOnly(['location', 'phone', 'weight', 'sex', 'mapZoom', 'mapImage']) &&
+        settings.location is bool && settings.phone is bool &&
+        settings.weight is bool && settings.sex is bool &&
+        settings.mapZoom is int && settings.mapZoom >= 12 && settings.mapZoom <= 19;
+    }
+    function validIdentification(data) {
+      let settings = data.get('identification', {});
+      return !('identification' in data) || (
+        validIdentificationOptions(settings) &&
+        (!('mapImage' in settings) || validMapImage(settings.mapImage))
+      );
+    }
+    function matchesIdentification(data, pet, basics, vis) {
+      let settings = pet.get('identification', {});
+      let enabled = basics && 'identification' in pet;
+      let image = settings.get('mapImage', {});
+      let place = pet.get('location', {});
+      let locationEnabled = enabled && settings.get('location', false) == true &&
+        vis.get('location', false) == true && place is map && 'mapImage' in settings &&
+        image.latitude == place.get('latitude', null) &&
+        image.longitude == place.get('longitude', null) &&
+        image.photoUrl == pet.get('photoUrl', null) && image.zoom == settings.mapZoom;
+      return enabled == ('identification' in data) && (!enabled || (
+        validIdentificationOptions(data.identification) &&
+        data.identification.mapZoom == settings.mapZoom &&
+        data.identification.location == locationEnabled &&
+        data.identification.phone == (settings.phone == true && vis.get('contact', false) == true &&
+          pet.get('phone', null) is string && pet.phone.size() > 0 &&
+          data.get('contact', {}) is map && data.get('contact', {}).get('phone', null) == pet.phone) &&
+        data.identification.weight == (settings.weight == true &&
+          pet.get('weightKg', null) is number && pet.weightKg > 0 && pet.weightKg <= 500 &&
+          data.get('weightKg', null) == pet.weightKg) &&
+        data.identification.sex == (settings.sex == true &&
+          pet.get('sex', null) in ['Macho', 'Hembra'] && data.get('sex', null) == pet.sex) &&
+        ('mapImage' in data.identification) == locationEnabled &&
+        (!locationEnabled || (data.identification.mapImage is map &&
+          data.identification.mapImage.zoom is int && data.identification.mapImage == image))
+      ));
+    }
     function publicFieldsOnly(data) {
       return data.keys().hasOnly(['petId', 'accountId', 'name', 'species', 'breed', 'photoUrl', 'photoPresentation', 'location',
-        'birthDate', 'sex', 'weightKg', 'notes', 'contact', 'health', 'healthEnabled', 'updatedAt']) &&
+        'birthDate', 'sex', 'weightKg', 'notes', 'contact', 'health', 'healthEnabled', 'identification', 'updatedAt']) &&
         data.keys().hasAll(['petId', 'accountId', 'updatedAt']);
     }
     function matchesOptional(data, source, field, enabled) {
@@ -35,18 +87,13 @@ service cloud.firestore {
       let basics = vis.get('basics', false) == true;
       let contact = vis.get('contact', false) == true;
       let health = vis.get('health', false) == true;
-      return publicFieldsOnly(data) && pet.get('publicId', '') == publicId &&
+      let shared = data.keys().removeAll(['petId', 'accountId', 'updatedAt', 'contact', 'health', 'healthEnabled', 'identification']);
+      return publicFieldsOnly(data) && validIdentification(pet) &&
+        matchesIdentification(data, pet, basics, vis) && pet.get('publicId', '') == publicId &&
         data.petId == pet.id && data.accountId == pet.accountId &&
-        matchesOptional(data, pet, 'name', basics) &&
-        matchesOptional(data, pet, 'species', basics) &&
-        matchesOptional(data, pet, 'breed', basics) &&
-        matchesOptional(data, pet, 'photoUrl', basics) &&
-        matchesOptional(data, pet, 'photoPresentation', basics) &&
-        matchesOptional(data, pet, 'birthDate', basics) &&
-        matchesOptional(data, pet, 'sex', basics) &&
-        matchesOptional(data, pet, 'weightKg', basics) &&
-        matchesOptional(data, pet, 'notes', basics) &&
-        matchesOptional(data, pet, 'location', vis.get('location', false) == true) &&
+        pet.keys().hasAll(shared) && !data.diff(pet).changedKeys().hasAny(shared) &&
+        (basics || !data.keys().hasAny(['name', 'species', 'breed', 'photoUrl', 'photoPresentation', 'birthDate', 'sex', 'weightKg', 'notes'])) &&
+        (vis.get('location', false) == true || !('location' in data)) &&
         (!( 'contact' in data) || (contact && data.contact is map &&
           data.contact.keys().hasOnly(['guardian', 'phone']) &&
           matchesOptional(data.contact, pet, 'guardian', true) &&

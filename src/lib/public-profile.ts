@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 import { showIdentification } from "./pet-identification";
+import { readIdentificationSettings } from "./identification-settings";
 import { petMapIcon } from "./pet-map-icon";
 import L from "leaflet";
 import { petAge, validCalendarDate, type CareKind } from "./pet-details";
@@ -287,6 +288,16 @@ async function load() {
           birthDate: text(data.birthDate),
           guardian: text(data.contact?.guardian),
           photoUrl: text(data.photoUrl),
+          phone: text(data.contact?.phone),
+          identification: readIdentificationSettings(data.identification),
+          weight:
+            Number.isFinite(data.weightKg) && data.weightKg > 0
+              ? `${new Intl.NumberFormat("es").format(data.weightKg)} kg`
+              : "",
+          sex: text(data.sex) === "No especificado" ? "" : text(data.sex),
+          location: coordinates
+            ? { ...coordinates, label: text(place.label) }
+            : undefined,
         },
         profileUrl.href,
       );

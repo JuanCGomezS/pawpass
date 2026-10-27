@@ -1,79 +1,78 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Nav from "../components/Nav.astro";
+import "../styles/auth.css";
+const base = import.meta.env.BASE_URL;
 ---
 
-<BaseLayout title="Ingresar — PawPass"
-  ><Nav /><main class="login-wrap">
-    <h1>Bienvenido a PawPass</h1><p>
-      Ingresa o crea tu acceso. Tu cuenta recibirá permisos cuando el superadmin
-      te asigne una cuenta de mascotas.
-    </p><form class="panel" data-email-form>
-      <div class="field">
-        <label for="email">Correo electrónico</label><input
-          id="email"
-          type="email"
-          placeholder="tu@correo.com"
-          required
-        />
-      </div><div class="field" style="margin-top:14px">
-        <label for="password">Contraseña</label><input
-          id="password"
-          type="password"
-          placeholder="Mínimo 6 caracteres"
-          required
-        />
-      </div><button
-        class="button"
-        style="width:100%;margin-top:20px"
-        type="submit">Continuar con correo</button
-      >
-    </form><div class="panel" style="margin-top:14px">
-      <button
-        class="button button-outline"
-        style="width:100%"
-        type="button"
-        data-google-sign-in>Continuar con Google</button
-      ><p class="small" aria-live="polite" data-auth-message>
-        Configura Firebase Authentication para activar el acceso.
-      </p>
+<BaseLayout title="Tu espacio — PawPass">
+  <Nav />
+  <main class="auth-page">
+    <div class="auth-welcome">
+      <h1>Su historia.<br /><span>Tu lugar para cuidarla.</span></h1>
+      <p>Bienvenido a PawPass. Un pequeño espacio para ese gran vínculo con tu mascota.</p>
+      <figure>
+        <img src={`${base}images/companion.jpg`} alt="Un golden retriever sostiene una flor amarilla" width="1200" height="1924" />
+        <figcaption>Cada pequeña historia empieza contigo.</figcaption>
+      </figure>
     </div>
-  </main><script>
-    import { signInWithGoogle } from "../lib/auth";
-    import { observeSession } from "../lib/session";
-    observeSession((state) => {
-      if (state.status === "signed-in")
-        window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
-    });
-    const message = document.querySelector<HTMLElement>("[data-auth-message]");
-    document
-      .querySelector("[data-email-form]")
-      ?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        if (message)
-          message.textContent =
-            "El acceso por correo se habilitará al conectar Firebase Authentication.";
-      });
-    document
-      .querySelector<HTMLButtonElement>("[data-google-sign-in]")
-      ?.addEventListener("click", async (event) => {
-        const button = event.currentTarget as HTMLButtonElement;
-        button.disabled = true;
-        if (message) message.textContent = "Abriendo Google…";
-        try {
-          const result = await signInWithGoogle();
-          if (result.ok) {
-            window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
-            return;
-          }
-          if (message) message.textContent = result.message;
-        } catch {
-          if (message)
-            message.textContent =
-              "Ocurrió un error inesperado al abrir Google.";
-        } finally {
-          button.disabled = false;
-        }
-      });
-  </script></BaseLayout
->
+    <section class="auth-panel" aria-label="Acceso a PawPass">
+      <fieldset class="auth-fields" data-auth-fields disabled>
+        <div data-auth-view="login">
+          <h2>Qué bueno verte por aquí.</h2>
+          <p class="auth-intro">Si es tu primera vez, continúa con Google. Crearemos tu acceso y sólo tendrás que confirmar tu nombre.</p>
+          <button class="auth-google" type="button" data-google-sign-in>
+            <img src={`${base}images/google.svg`} width="20" height="20" alt="" />
+            <span>Continuar con Google</span>
+          </button>
+          <div class="auth-divider"><span>o ingresa con tu correo</span></div>
+          <form data-email-form>
+            <div class="field">
+              <label for="email">Correo electrónico</label>
+              <input id="email" name="email" type="email" autocomplete="email" placeholder="tu@correo.com" required />
+            </div>
+            <div class="field">
+              <label for="password">Contraseña</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <button class="auth-text-button auth-forgot" type="button" data-reset-open>¿Olvidaste tu contraseña?</button>
+            <button class="button auth-submit" type="submit">Ingresar</button>
+          </form>
+        </div>
+        <div data-auth-view="name" hidden>
+          <h2>Un último detalle,<br />y listo.</h2>
+          <p class="auth-intro">Tu cuenta de Google está conectada. Confirma tu nombre para completar el registro en PawPass.</p>
+          <p class="auth-account" data-profile-email></p>
+          <form data-name-form>
+            <div class="field">
+              <label for="profile-name">¿Cómo quieres que te llamemos?</label>
+              <input id="profile-name" name="name" type="text" autocomplete="name" maxlength="80" required aria-describedby="profile-name-help" />
+              <small id="profile-name-help">Puedes usar tu nombre o el nombre con el que te conocen.</small>
+            </div>
+            <button class="button auth-submit" type="submit">Confirmar mi nombre y continuar</button>
+          </form>
+          <button class="auth-text-button auth-back" type="button" data-change-account>Usar otra cuenta de Google</button>
+        </div>
+        <div data-auth-view="reset" hidden>
+          <h2>Volvamos a tu espacio.</h2>
+          <p class="auth-intro">Escribe tu correo para solicitar un enlace de recuperación. Podrás elegir una contraseña nueva desde ese enlace.</p>
+          <form data-reset-form>
+            <div class="field">
+              <label for="reset-email">Correo electrónico</label>
+              <input id="reset-email" name="email" type="email" autocomplete="email" placeholder="tu@correo.com" required />
+            </div>
+            <button class="button auth-submit" type="submit">Enviar enlace de recuperación</button>
+          </form>
+          <p class="auth-recovery-help">Si no ves el correo, revisa la carpeta de spam o correo no deseado.</p>
+          <button class="auth-text-button auth-back" type="button" data-reset-back>Volver a iniciar sesión</button>
+        </div>
+      </fieldset>
+      <p class="auth-message" data-auth-message role="status" aria-live="polite">Comprobando tu sesión…</p>
+      <button class="auth-text-button" type="button" data-retry-session hidden>Volver a intentar</button>
+      <p class="auth-access-note">Crear tu acceso no asigna cupos automáticamente. La administración habilita el registro de mascotas en tu cuenta.</p>
+    </section>
+  </main>
+  <script>
+    import "../lib/login";
+  </script>
+</BaseLayout>

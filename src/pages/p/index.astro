@@ -128,23 +128,9 @@ const base = import.meta.env.BASE_URL;
           <div class="identification-heading">
             <div>
               <h2 id="identification-title">Identificación</h2><p>
-                Su pequeña credencial, lista para llevar contigo.
+                Su pequeña credencial, por delante y por detrás.
               </p>
             </div>
-            <a class="button" data-id-download hidden
-              ><svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-                ><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"></path></svg
-              >Descargar identificación</a
-            >
           </div>
           <p data-id-status role="status"></p>
           <button
@@ -153,14 +139,31 @@ const base = import.meta.env.BASE_URL;
             data-id-retry
             hidden>Volver a intentar</button
           >
-          <a
+          <button
             class="identification-preview"
-            data-id-full
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Abrir identificación en tamaño completo"
-            hidden><img data-id-image width="1536" height="960" alt="" /></a
+            type="button"
+            data-id-flip
+            data-side="front"
+            aria-label="Dar la vuelta a la identificación"
+            aria-describedby="identification-side"
+            hidden
           >
+            <span class="identification-flipper">
+              <span class="identification-face" aria-hidden="false">
+                <img data-id-image width="1536" height="960" alt="" />
+              </span>
+              <span class="identification-face identification-face-back" aria-hidden="true">
+                <img data-id-back-image width="1536" height="960" alt="" />
+              </span>
+            </span>
+          </button>
+          <p id="identification-side" class="identification-side" data-id-side role="status" hidden></p>
+          <div class="identification-actions" data-id-actions hidden>
+            <a class="button" data-id-download>Descargar frente</a>
+            <a class="button button-outline" data-id-back-download>Descargar reverso</a>
+            <a data-id-full target="_blank" rel="noopener noreferrer">Ver frente en tamaño completo</a>
+            <p class="identification-note">Imprime ambas caras a 9 cm de ancho, sin estirar la imagen. El QR abre la ficha actualizada; las copias descargadas conservan los datos del momento de descarga.</p>
+          </div>
         </section>
         <section class="story-intro" data-about-section hidden>
           <div>

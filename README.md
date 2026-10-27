@@ -76,13 +76,25 @@ publicProfiles/{publicId}   sólo la proyección explícitamente pública
 
 ## GitHub Pages
 
-Configura `SITE_URL` y `BASE_PATH` durante el build:
+El dominio público es `https://pawpass.is-local.org/`, servido desde la raíz:
 
 ```bash
-SITE_URL=https://TU-USUARIO.github.io BASE_PATH=/pawpass/ npm run build
+SITE_URL=https://pawpass.is-local.org/ BASE_PATH=/ npm run build
 ```
 
-Publica `dist/` con GitHub Actions o la acción oficial de Pages. Para un sitio de usuario, usa `BASE_PATH=/`.
+En local, configura `SITE_URL=https://pawpass.is-local.org/` en `.env` y ejecuta `npm run dev`. El workflow usa este dominio por defecto y admite reemplazarlo mediante la variable de Actions `SITE_URL`.
+
+El DNS debe tener un CNAME de `pawpass.is-local.org` a `juancgomezs.github.io`, sin rutas. Coordina el despliegue de `dist/` con la configuración de `pawpass.is-local.org` en **Settings → Pages → Custom domain** y activa HTTPS cuando el certificado esté disponible. Con despliegue mediante Actions, `public/CNAME` no sustituye esa configuración remota.
+
+Autoriza también el hostname en Firebase Authentication y el origen HTTPS en CORS de Storage. No retires los orígenes anteriores durante el cambio. Si vuelves al dominio de GitHub Pages, restaura tanto `SITE_URL` con `/pawpass/` como `BASE_PATH=/pawpass/` en el workflow y retira el dominio personalizado de Pages.
+
+## Acceso y recuperación
+
+- Google crea el acceso de una persona nueva y pide confirmar su nombre. El perfil `users/{uid}` conserva `displayName` y `nameConfirmed`; si el registro queda pendiente, la confirmación reaparece al volver. Los perfiles anteriores sin ese indicador conservan su acceso.
+- Correo y contraseña permiten iniciar sesión, sin crear usuarios automáticamente. Con la protección contra enumeración de Firebase, un correo inexistente y una contraseña incorrecta pueden producir el mismo error; no se consulta una lista pública de usuarios para distinguirlos.
+- La recuperación utiliza el correo de restablecimiento de Firebase, en español, y recuerda revisar spam. La confirmación no revela si una dirección está registrada. El cambio de contraseña se completa en la página de recuperación de Firebase.
+- Confirmar el nombre es un paso de interfaz, no un permiso: las reglas y los roles siguen controlando los datos. No se asignan cuentas de mascotas ni cupos al registrarse.
+- El logo de Google en `public/images/google.svg` procede del [recurso oficial de FirebaseUI](https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg), conservando sus colores y aviso de copyright.
 
 ## Foto e historial
 

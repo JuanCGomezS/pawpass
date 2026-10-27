@@ -41,7 +41,18 @@ import Nav from "../../components/Nav.astro";
     const form = document.querySelector<HTMLFormElement>("[data-pet-form]");
     const message = document.querySelector<HTMLElement>("[data-form-message]");
     let accountId = "";
+    let sessionVersion = 0;
     observeSession(async (state) => {
+      const current = ++sessionVersion;
+      accountId = "";
+      if (form) {
+        form.hidden = true;
+        form.reset();
+        const button = form.querySelector<HTMLButtonElement>("button");
+        if (button) button.disabled = false;
+      }
+      if (message) message.textContent = "";
+      if (status) status.textContent = "Comprobando tus cupos…";
       if (state.status === "loading") return;
       if (state.status !== "signed-in") {
         window.location.assign(`${import.meta.env.BASE_URL}login/`);
@@ -49,11 +60,13 @@ import Nav from "../../components/Nav.astro";
       }
       try {
         const account = await accountForUser(state.session.uid);
+        if (current !== sessionVersion) return;
         const slots = account ? await availableSlots(account.id) : 0;
+        if (current !== sessionVersion) return;
         if (!account || slots === 0) {
           if (status)
             status.textContent =
-              "No tienes cupos disponibles. Pide al superadmin que te asigne uno.";
+              "No tienes cupos disponibles. Pide al administrador que te asigne uno.";
           return;
         }
         accountId = account.id;
@@ -61,6 +74,7 @@ import Nav from "../../components/Nav.astro";
           status.textContent = `Tienes ${slots} cupo${slots === 1 ? "" : "s"} disponible${slots === 1 ? "" : "s"}.`;
         form?.removeAttribute("hidden");
       } catch {
+        if (current !== sessionVersion) return;
         if (status) status.textContent = "No fue posible comprobar tus cupos.";
       }
     });
@@ -70,7 +84,8 @@ import Nav from "../../components/Nav.astro";
       const name = form.elements.namedItem("name") as HTMLInputElement;
       const species = form.elements.namedItem("species") as HTMLSelectElement;
       const breed = form.elements.namedItem("breed") as HTMLInputElement;
-      if (!accountId || !name.value.trim()) return;
+      if (!accountId || !name.value.trim() || button?.disabled) return;
+      const current = sessionVersion;
       if (button) button.disabled = true;
       if (message) message.textContent = "Guardando…";
       try {
@@ -80,8 +95,10 @@ import Nav from "../../components/Nav.astro";
           species: species.value,
           breed: breed.value.trim(),
         });
+        if (current !== sessionVersion) return;
         window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);
       } catch (error) {
+        if (current !== sessionVersion) return;
         if (message)
           message.textContent =
             error instanceof Error

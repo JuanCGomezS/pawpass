@@ -85,7 +85,15 @@ import Nav from "../../components/Nav.astro";
     const capacity = document.querySelector<HTMLElement>("[data-capacity]");
     const meter = document.querySelector<HTMLElement>("[data-capacity-meter]");
     const adminLink = document.querySelector<HTMLElement>("[data-admin-link]");
+    let sessionVersion = 0;
     observeSession(async (state) => {
+      const current = ++sessionVersion;
+      list?.replaceChildren();
+      if (create) create.hidden = true;
+      if (adminLink) adminLink.hidden = true;
+      if (capacity) capacity.textContent = "—";
+      if (meter) meter.style.width = "0%";
+      if (summary) summary.textContent = "Comprobando tu cuenta…";
       if (state.status === "loading") return;
       if (state.status !== "signed-in") {
         window.location.assign(`${import.meta.env.BASE_URL}login/`);
@@ -94,10 +102,11 @@ import Nav from "../../components/Nav.astro";
       if (adminLink) adminLink.hidden = !state.session.isSuperadmin;
       try {
         const account = await accountForUser(state.session.uid);
+        if (current !== sessionVersion) return;
         if (!account) {
           if (summary)
             summary.textContent =
-              "Aún no tienes una cuenta de mascotas asignada.";
+              "Tu cuenta está lista. Solicita cupos para registrar tu primera mascota.";
           if (capacity) capacity.textContent = "0 cupos";
           return;
         }
@@ -105,6 +114,7 @@ import Nav from "../../components/Nav.astro";
           petsForAccount(account.id),
           availableSlots(account.id),
         ]);
+        if (current !== sessionVersion) return;
         const used = pets.length;
         if (summary)
           summary.textContent = `Cuenta activa: ${used} mascota${used === 1 ? "" : "s"} registrada${used === 1 ? "" : "s"}.`;
@@ -123,6 +133,7 @@ import Nav from "../../components/Nav.astro";
                 .join("")
             : '<div class="panel"><h2>Aún no tienes mascotas registradas</h2><p>Cuando tengas un cupo disponible, podrás añadir la primera.</p></div>';
       } catch {
+        if (current !== sessionVersion) return;
         if (summary)
           summary.textContent =
             "No fue posible cargar tu cuenta. Intenta de nuevo.";

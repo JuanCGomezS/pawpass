@@ -117,6 +117,41 @@ p {
 .site-header nav a {
   padding: 8px 0;
 }
+.nav-account {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  margin-left: auto;
+}
+.nav-greeting {
+  margin: 0;
+  max-width: 240px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.nav-greeting strong {
+  display: block;
+  color: var(--navy);
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.nav-account .avatar {
+  flex-shrink: 0;
+}
+@media (max-width: 1000px) {
+  .site-header:has(.nav-account) {
+    flex-wrap: wrap;
+  }
+  .site-header:has(.nav-account) nav {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+}
 .button,
 .avatar {
   display: inline-flex;
@@ -768,6 +803,13 @@ p {
   }
   [data-nav-actions] {
     margin-left: auto;
+  }
+  .nav-account {
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+  .nav-greeting {
+    max-width: none;
   }
   .hero {
     grid-template-columns: 1fr;

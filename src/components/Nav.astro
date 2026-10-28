@@ -20,11 +20,22 @@
   const links = document.querySelector<HTMLElement>("[data-nav-links]");
   const actions = document.querySelector<HTMLElement>("[data-nav-actions]");
   observeSession((state) => {
-    if (!links || !actions || state.status === "loading") return;
-    if (state.status === "signed-in") {
-      links.innerHTML = `<a href="">Inicio</a><a href="mis-mascotas/">Mis mascotas</a>${state.session.isSuperadmin ? '<a href="admin/">Administración</a>' : ""}`;
+    if (!links || !actions) return;
+    const authenticated = state.status === "signed-in" || state.status === "needs-profile";
+    actions.classList.toggle("nav-account", authenticated);
+    if (state.status === "loading") {
+      links.innerHTML = '<a href="">Inicio</a>';
+      actions.replaceChildren();
+      return;
+    }
+    if (state.status === "signed-in" || state.status === "needs-profile") {
+      links.innerHTML = state.status === "signed-in"
+        ? `<a href="">Inicio</a><a href="mis-mascotas/">Mis mascotas</a>${state.session.isSuperadmin ? '<a href="admin/">Administración</a>' : ""}`
+        : '<a href="">Inicio</a><a href="login/">Completar perfil</a>';
       actions.innerHTML =
-        '<button class="avatar" type="button" data-sign-out aria-label="Cerrar sesión">Salir</button>';
+        '<p class="nav-greeting">Hola,<strong data-nav-email></strong></p><button class="avatar" type="button" data-sign-out aria-label="Cerrar sesión">Salir</button>';
+      const email = actions.querySelector<HTMLElement>("[data-nav-email]");
+      if (email) email.textContent = state.session.email;
       actions
         .querySelector("[data-sign-out]")
         ?.addEventListener("click", async () => {

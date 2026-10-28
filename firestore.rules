@@ -140,7 +140,7 @@ service cloud.firestore {
     }
 
     match /accounts/{accountId} {
-      allow read: if ownsAccount(accountId) || isSuperadmin();
+      allow read: if (signedIn() && resource.data.adminUid == request.auth.uid) || isSuperadmin();
       allow create, update, delete: if isSuperadmin();
       match /slots/{slotId} {
         allow read: if ownsAccount(accountId) || isSuperadmin();

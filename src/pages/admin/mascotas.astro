@@ -45,7 +45,7 @@ import Nav from "../../components/Nav.astro";
             ? pets
                 .map(
                   (pet) =>
-                    `<article class="pet-card"><div class="feature-icon">${pet.name.slice(0, 1)}</div><div class="meta"><h2>${pet.name}</h2><p>${pet.owner} · ${pet.species}${pet.breed ? ` · ${pet.breed}` : ""}</p></div></article>`,
+                    `<article class="pet-card"><div class="feature-icon">${pet.name.slice(0, 1)}</div><div class="meta"><h2>${pet.name}</h2><p>${pet.owner} · ${pet.species}${pet.breed ? ` · ${pet.breed}` : ""}</p></div><a class="button button-small button-outline" href="mis-mascotas/mascota/?id=${encodeURIComponent(pet.id)}">Editar mascota</a></article>`,
                 )
                 .join("")
             : "<p>No hay mascotas registradas.</p>";

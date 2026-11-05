@@ -27,6 +27,7 @@ const photoStatus = element("[data-photo-status]");
 const content = element("[data-editor-content]");
 const petId = new URLSearchParams(location.search).get("id");
 const kinds: CareKind[] = ["vaccines", "vet-visits", "medications"];
+const immutablePetFields = ["pet-name", "pet-species", "pet-sex"];
 let pet: PetProfile | null = null;
 let records: Record<CareKind, CareRecord[]> = {
   vaccines: [],
@@ -514,6 +515,8 @@ observeSession(async (state) => {
     };
     for (const [id, value] of Object.entries(mapping))
       input(id).value = value ?? "";
+    for (const id of immutablePetFields)
+      input(id).disabled = !state.session.isSuperadmin;
     for (const key of ["basics", "location", "contact", "health"] as const)
       input(`show-${key}`).checked = pet.visibility?.[key] ?? key === "basics";
     selectedLocation = pet.location;
@@ -596,7 +599,9 @@ form.addEventListener("submit", async (event) => {
       photoPresentation: input("pet-photo-presentation")
         .value as PetProfile["photoPresentation"],
       birthDate: input("pet-birth-date").value || undefined,
-      sex: input("pet-sex").value as PetProfile["sex"],
+      sex: input("pet-sex").disabled
+        ? pet.sex
+        : (input("pet-sex").value as PetProfile["sex"]),
       weightKg: input("pet-weight").value
         ? Number(input("pet-weight").value)
         : undefined,

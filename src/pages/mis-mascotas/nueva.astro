@@ -22,12 +22,16 @@ import Nav from "../../components/Nav.astro";
             <label for="species">Especie</label><select id="species"
               ><option>Perro</option><option>Gato</option><option>Otra</option
               ></select>
+          </div><div class="field">
+            <label for="sex">Sexo</label><select id="sex"
+              ><option>No especificado</option><option>Macho</option><option>Hembra</option
+              ></select>
           </div><div class="field full">
             <label for="breed">Raza</label><input id="breed" />
           </div>
         </div><button class="button" style="margin-top:22px"
           >Guardar mascota</button
-        ><p class="small" aria-live="polite" data-form-message></p>
+        ><p class="small">Verifica el nombre, la especie y el sexo antes de guardar: después solo la administración de PawPass podrá modificarlos.</p><p class="small" aria-live="polite" data-form-message></p>
       </form>
     </section>
   </main><script>
@@ -84,6 +88,7 @@ import Nav from "../../components/Nav.astro";
       const name = form.elements.namedItem("name") as HTMLInputElement;
       const species = form.elements.namedItem("species") as HTMLSelectElement;
       const breed = form.elements.namedItem("breed") as HTMLInputElement;
+      const sex = form.elements.namedItem("sex") as HTMLSelectElement;
       if (!accountId || !name.value.trim() || button?.disabled) return;
       const current = sessionVersion;
       if (button) button.disabled = true;
@@ -94,6 +99,7 @@ import Nav from "../../components/Nav.astro";
           name: name.value.trim(),
           species: species.value,
           breed: breed.value.trim(),
+          sex: sex.value as "Macho" | "Hembra" | "No especificado",
         });
         if (current !== sessionVersion) return;
         window.location.assign(`${import.meta.env.BASE_URL}mis-mascotas/`);

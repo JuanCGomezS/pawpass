@@ -392,6 +392,7 @@ export async function createPet(input: {
   name: string;
   species: string;
   breed: string;
+  sex: "Macho" | "Hembra" | "No especificado";
 }): Promise<void> {
   const databaseInstance = database();
   const slots = await getDocs(
@@ -413,6 +414,7 @@ export async function createPet(input: {
     name: input.name,
     species: input.species,
     breed: input.breed,
+    sex: input.sex,
     identification: readIdentificationSettings(undefined),
     visibility: { basics: true, location: false },
   };
@@ -455,7 +457,7 @@ export async function savePetProfile(pet: PetProfile): Promise<void> {
   if (!pet.publicId)
     throw new Error("La mascota no tiene identificador público persistido.");
   const batch = writeBatch(database());
-  batch.update(doc(database(), "pets", pet.id), {
+  const profile = {
     name: pet.name,
     species: pet.species,
     breed: pet.breed,
@@ -465,7 +467,7 @@ export async function savePetProfile(pet: PetProfile): Promise<void> {
     identification: pet.identification ?? readIdentificationSettings(undefined),
     location: pet.location ?? null,
     birthDate: optionalText(pet.birthDate) ?? null,
-    sex: optionalText(pet.sex) ?? null,
+    ...(pet.sex === undefined ? {} : { sex: optionalText(pet.sex) ?? null }),
     weightKg: pet.weightKg ?? null,
     notes: optionalText(pet.notes) ?? null,
     guardian: optionalText(pet.guardian) ?? null,
@@ -479,7 +481,8 @@ export async function savePetProfile(pet: PetProfile): Promise<void> {
       health: pet.visibility.health === true,
     },
     updatedAt: serverTimestamp(),
-  });
+  };
+  batch.update(doc(database(), "pets", pet.id), profile);
   batch.set(
     doc(database(), "publicProfiles", pet.publicId),
     publicProjection(pet),

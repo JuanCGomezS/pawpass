@@ -168,7 +168,8 @@ service cloud.firestore {
       allow update: if ((ownsAccount(resource.data.accountId) &&
         request.resource.data.accountId == resource.data.accountId &&
         request.resource.data.slotId == resource.data.slotId &&
-        request.resource.data.publicId == resource.data.publicId) || isSuperadmin()) &&
+        request.resource.data.publicId == resource.data.publicId &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['name', 'species', 'sex'])) || isSuperadmin()) &&
         existsAfter(profilePath(resource.data.publicId)) &&
         matchesProfile(getAfter(profilePath(resource.data.publicId)).data, request.resource.data,
           resource.data.publicId);

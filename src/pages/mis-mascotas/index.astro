@@ -128,7 +128,7 @@ import Nav from "../../components/Nav.astro";
             ? pets
                 .map(
                   (pet) =>
-                    `<article class="pet-card"><div class="feature-icon">${pet.name.slice(0, 1)}</div><div class="meta"><h2>${pet.name}</h2><p>${pet.species}${pet.breed ? ` · ${pet.breed}` : ""}</p></div><a class="button button-small button-outline" href="mis-mascotas/mascota/?id=${encodeURIComponent(pet.id)}">Administrar</a></article>`,
+                    `<article class="pet-card"><div class="feature-icon">${pet.name.slice(0, 1)}</div><div class="meta"><h2>${pet.name}</h2><p>${pet.species}${pet.breed ? ` · ${pet.breed}` : ""}</p></div><a class="button button-small button-outline" href="mis-mascotas/mascota/?id=${encodeURIComponent(pet.id)}">Administrar</a><a class="button button-small button-outline" href="${import.meta.env.BASE_URL}p/?id=${encodeURIComponent(pet.publicId)}">Ver mascota</a></article>`,
                 )
                 .join("")
             : '<div class="panel"><h2>Aún no tienes mascotas registradas</h2><p>Cuando tengas un cupo disponible, podrás añadir la primera.</p></div>';

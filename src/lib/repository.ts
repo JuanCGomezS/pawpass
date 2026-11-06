@@ -67,7 +67,7 @@ export type PetProfile = {
 };
 export type PetSummary = Pick<
   PetProfile,
-  "id" | "name" | "species" | "breed" | "accountId" | "photoUrl"
+  "id" | "publicId" | "name" | "species" | "breed" | "accountId" | "photoUrl"
 >;
 
 function database() {
